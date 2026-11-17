@@ -37,11 +37,12 @@ export function ShareWhatsApp({ text, to = '', size = 'default', variant = 'outl
   }
 
   return (
-    <>
+    <div className="grid gap-1">
       <Button type="button" variant={variant} size={size} onClick={() => void share()} disabled={busy}>
         {busy ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <MessageCircle className="size-4" aria-hidden />}
         Share on WhatsApp
       </Button>
+      {!to && <span className="text-xs text-muted-foreground">WhatsApp will ask who to send to. Pick a contact or group, then tap Send.</span>}
       {error && <p role="alert" className="text-sm text-danger">{error}</p>}
       <Dialog open={!!link} onOpenChange={(o) => { if (!o) setLink(null); }}>
         <DialogContent>
@@ -57,6 +58,6 @@ export function ShareWhatsApp({ text, to = '', size = 'default', variant = 'outl
           </Button>
         </DialogContent>
       </Dialog>
-    </>
+    </div>
   );
 }
