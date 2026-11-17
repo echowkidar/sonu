@@ -1,0 +1,42 @@
+{
+    "name": "@sonu/server",
+    "version": "0.1.0",
+    "private": true,
+    "type": "module",
+    "description": "SONU API server: Fastify 5, PostgreSQL, static hosting of the web app",
+    "engines": {
+        "node": ">=22"
+    },
+    "main": "dist/src/index.js",
+    "scripts": {
+        "build": "tsc -p tsconfig.json",
+        "start": "node dist/src/index.js",
+        "dev": "tsx watch src/dev.ts",
+        "dev:once": "tsx src/dev.ts",
+        "test": "vitest run",
+        "test:watch": "vitest",
+        "typecheck": "tsc -p tsconfig.json --noEmit"
+    },
+    "dependencies": {
+        "@fastify/cookie": "^11.1.5",
+        "@fastify/multipart": "^10.1.9",
+        "@fastify/static": "^10.1.11",
+        "exceljs": "^4.4.0",
+        "fastify": "^5.12.8",
+        "fastify-plugin": "^6.0.1",
+        "nodemailer": "^10.6.0",
+        "pg": "^8.23.1",
+        "proxy-addr": "^2.0.8",
+        "zod": "^4.6.7"
+    },
+    "devDependencies": {
+        "@types/node": "^22.20.5",
+        "@types/nodemailer": "^8.0.2",
+        "@types/pg": "^8.23.1",
+        "@types/proxy-addr": "^2.0.3",
+        "embedded-postgres": "^17.11.0-beta.19",
+        "tsx": "^4.23.15",
+        "typescript": "^5.9.3",
+        "vitest": "^5.1.0"
+    }
+}

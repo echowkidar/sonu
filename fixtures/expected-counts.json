@@ -28,11 +28,11 @@
     "RFE Approved": 10
   },
   "rfeTimeFrameSplit": {
-    "submitted": 9,
-    "notRequired": 16,
-    "valid": 11,
+    "submitted": 21,
+    "notRequired": 12,
+    "valid": 12,
     "breach": 14,
-    "approved": 10
+    "unknown": 1
   },
   "byYear": {
     "2024": 2,

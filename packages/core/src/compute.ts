@@ -34,7 +34,7 @@ export type RfeTimeFrameKind = 'valid' | 'breach' | 'submitted' | 'notRequired' 
 
 export interface ComputedColumns {
   month: AgeBucket;
-  daysToBreach: number | 'No TD';
+  daysToBreach: number | 'No TD' | 'Completed';
   tdStatus: TdStatus;
   kpi: KpiLabel;
   rfeSubmittedOn: IsoDate | null;
@@ -97,7 +97,13 @@ export function ageBucket(requested: IsoDate | null | undefined, today: IsoDate)
  * "Days to Breach" = today - Agreed Target Date, exactly as the workbook formula reads (positive = days past the
  * target, negative = days left, 0 = target date is today). Empty target date -> "No TD".
  */
-export function daysToBreach(target: IsoDate | null | undefined, today: IsoDate): number | 'No TD' {
+export function daysToBreach(
+  target: IsoDate | null | undefined,
+  today: IsoDate,
+  wrStatus?: unknown,
+): number | 'No TD' | 'Completed' {
+  // Workbook column R: status "COMPLETED" -> "Completed"; no target date -> "No TD"; else TODAY - target.
+  if (norm(wrStatus) === 'completed') return 'Completed';
   return target ? diffDays(target, today) : 'No TD';
 }
 
@@ -122,47 +128,54 @@ export function kpiOf(target: IsoDate | null | undefined, today: IsoDate): KpiLa
   return t < n ? 'Backlog KPI' : 'Future KPI';
 }
 
-const MONTHLY_ROUTINE_RE = /monthly\s*routine/i;
+/** The exact remark the workbook formula (column AB) compares with; Excel's "=" ignores case. */
+export const MONTHLY_ROUTINE_REMARK = 'Monthly Routine Activities WR to be closed at the end of the Month';
+/** Statuses that give "RFE Not Required" at cost 0 in column AB (On Hold and Closed are NOT in the formula). */
+const NOT_REQUIRED_STATUSES = ['issued and in process', 'completed', 'contractor completed'];
 
 /**
- * RFE status:
- *  - FC Remarks mention a monthly routine -> "RFE Not Required" (checked first: it is an override)
- *  - Assigned + cost 0 -> "RFE To Be Submitted";  Assigned + cost > 0 -> "RFE Submitted"
- *  - Issued or Completed + cost 0 -> "RFE Not Required"
- *  - otherwise -> "RFE Approved" (Issued / Completed with a cost, and any other status)
+ * RFE status, workbook column AB, in the formula's own order:
+ *  1. FC Remarks = the monthly-routine remark            -> "RFE Not Required"
+ *  2. Assigned to Work Order + cost 0                     -> "RFE To Be Submitted"
+ *  3. Issued and In Process / Completed / Contractor Completed + cost 0 -> "RFE Not Required"
+ *  4. Assigned to Work Order + cost > 0                   -> "RFE Submitted"
+ *  5. anything else                                       -> "RFE Approved"
  */
 export function rfeStatusOf(wr: Pick<WrInput, 'wrStatus' | 'estimatedTotalCost' | 'fcRemarks'>): RfeStatus {
   const cost = wr.estimatedTotalCost ?? 0;
-  if (wr.fcRemarks && MONTHLY_ROUTINE_RE.test(wr.fcRemarks)) return 'RFE Not Required';
-  if (isAssigned(wr.wrStatus)) return cost > 0 ? 'RFE Submitted' : 'RFE To Be Submitted';
-  if ((isIssued(wr.wrStatus) || isCompleted(wr.wrStatus)) && cost === 0) return 'RFE Not Required';
+  if (norm(wr.fcRemarks) === norm(MONTHLY_ROUTINE_REMARK)) return 'RFE Not Required';
+  if (isAssigned(wr.wrStatus) && cost === 0) return 'RFE To Be Submitted';
+  if (NOT_REQUIRED_STATUSES.includes(norm(wr.wrStatus)) && cost === 0) return 'RFE Not Required';
+  if (isAssigned(wr.wrStatus) && cost > 0) return 'RFE Submitted';
   return 'RFE Approved';
 }
 
 /**
- * RFE time frame (only for Assigned WRs with cost 0, i.e. "RFE To Be Submitted"; every other row shows its RFE status).
- *
- * Elapsed = today - Date Trade Assigned, in days. The workbook says "within 14 days ... after that", and its text
- * "N Days Remaining" must be able to read 0, so day 14 itself is still inside the time frame:
- *   elapsed <= limit -> "RFE Valid Time Frame - {limit - elapsed} Days Remaining"   (day 14 -> 0 remaining)
- *   elapsed >  limit -> "RFE Time Breach - {elapsed - limit} Days Crossed"           (day 15 -> 1 crossed)
- * The limit is configurable (`rfeLimitDays`, default 14).
+ * RFE time frame, workbook column AE (its own formula, independent of column AB and of the remarks):
+ *   Issued and In Process + cost 0 -> "RFE Not Required"
+ *   cost > 0                       -> "RFE Submitted"
+ *   Assigned to Work Order + cost 0:
+ *     elapsed <= limit -> "RFE Valid Time Frame - {limit - elapsed} Days Remaining"   (day 14 -> 0 remaining)
+ *     elapsed >  limit -> "RFE Time Breach - {elapsed - limit} Days Crossed"           (day 15 -> 1 crossed)
+ *   anything else                  -> "" (blank)
+ * Elapsed = today - Date Trade Assigned in whole calendar days. The limit is configurable (default 14).
  */
 export function rfeTimeFrameOf(
   wr: Pick<WrInput, 'wrStatus' | 'estimatedTotalCost' | 'fcRemarks' | 'dateTradeAssigned'>,
   today: IsoDate,
   limit = 14,
 ): { label: string; kind: RfeTimeFrameKind } {
-  const status = rfeStatusOf(wr);
-  if (status === 'RFE To Be Submitted') {
+  const cost = wr.estimatedTotalCost ?? 0;
+  const status = norm(wr.wrStatus);
+  if (status === 'issued and in process' && cost === 0) return { label: 'RFE Not Required', kind: 'notRequired' };
+  if (cost > 0) return { label: 'RFE Submitted', kind: 'submitted' };
+  if (isAssigned(wr.wrStatus) && cost === 0) {
     if (!wr.dateTradeAssigned) return { label: 'RFE Time Frame - No Assigned Date', kind: 'unknown' };
     const elapsed = diffDays(wr.dateTradeAssigned, today);
     if (elapsed <= limit) return { label: `RFE Valid Time Frame - ${limit - elapsed} Days Remaining`, kind: 'valid' };
     return { label: `RFE Time Breach - ${elapsed - limit} Days Crossed`, kind: 'breach' };
   }
-  if (status === 'RFE Submitted') return { label: status, kind: 'submitted' };
-  if (status === 'RFE Not Required') return { label: status, kind: 'notRequired' };
-  return { label: status, kind: 'approved' };
+  return { label: '', kind: 'unknown' };
 }
 
 function lookupRfe(l: RfeLookup | undefined, code: string | null | undefined): RfeDates | null {
@@ -182,7 +195,7 @@ export function computeColumns(wr: WrInput, opts: ComputeOptions): ComputedColum
   const tf = rfeTimeFrameOf(wr, today, limit);
   return {
     month: ageBucket(wr.dateRequested, today),
-    daysToBreach: daysToBreach(wr.targetDate, today),
+    daysToBreach: daysToBreach(wr.targetDate, today, wr.wrStatus),
     tdStatus: tdStatus(wr.targetDate, today),
     kpi: kpiOf(wr.targetDate, today),
     rfeSubmittedOn: rfe?.submittedOn ?? null,

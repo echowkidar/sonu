@@ -1,0 +1,75 @@
+# Portainer: Stacks -> Add stack -> Repository -> this repo, compose path: docker-compose.yml
+# Required stack environment variables:
+#   POSTGRES_PASSWORD   database password (long random string)
+#   ENCRYPTION_KEY      32 random bytes, base64:  openssl rand -base64 32   (keep a copy: without it stored passwords are lost)
+#   PUBLIC_URL          address users open, e.g. https://sonu.example.com (used in invitation links)
+# Optional:
+#   SONU_PORT           host port, default 8091
+#   TRUST_PROXY         "1" (default) = trust the proxy in front (Cloudflare Tunnel): CF-Connecting-IP, Secure cookies on https
+# The Marafiq connection worker is optional:  docker compose --profile worker up -d
+services:
+  app:
+    build: .
+    image: sonu-app:latest
+    container_name: sonu-app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgres://sonu:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in the stack environment variables}@db:5432/sonu
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?Set ENCRYPTION_KEY (openssl rand -base64 32)}
+      PUBLIC_URL: ${PUBLIC_URL:?Set PUBLIC_URL, e.g. https://sonu.example.com}
+      TRUST_PROXY: ${TRUST_PROXY:-1}
+      UPLOAD_DIR: /data/uploads
+    ports:
+      - "${SONU_PORT:-8091}:3000"   # Cloudflare Tunnel service URL: http://localhost:8091 (cloudflared on the host)
+    volumes:
+      - sonu-uploads:/data/uploads  # photos and documents persist here
+
+    # If cloudflared runs as a Docker container instead, uncomment and use the name of its network,
+    # then set the tunnel's public hostname service to:  http://sonu-app:3000
+    # networks:
+    #   - default
+    #   - cloudflared
+
+  db:
+    image: postgres:17-alpine
+    container_name: sonu-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: sonu
+      POSTGRES_USER: sonu
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in the stack environment variables}
+    volumes:
+      - sonu-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sonu -d sonu"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    # Not published to the host: only reachable by the app on the stack network.
+
+  worker:
+    profiles: ["worker"]
+    build:
+      context: .
+      dockerfile: worker/Dockerfile
+    image: sonu-worker:latest
+    container_name: sonu-worker
+    restart: unless-stopped
+    depends_on:
+      - app
+    environment:
+      APP_URL: http://app:3000
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?Set ENCRYPTION_KEY (openssl rand -base64 32)}
+
+volumes:
+  sonu-db:
+  sonu-uploads:
+
+# networks:
+#   cloudflared:
+#     external: true

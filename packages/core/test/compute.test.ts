@@ -49,8 +49,11 @@ describe('RFE status (all branches)', () => {
     ['Contractor Completed', 0, null, 'RFE Not Required'],
     ['Completed', 10, null, 'RFE Approved'],
     ['Requested', 0, null, 'RFE Approved'],
-    [A, 0, 'Monthly routine task', 'RFE Not Required'],
-    [A, 900, 'monthly  routine', 'RFE Not Required'],
+    [A, 0, '  monthly routine activities WR to be closed at the end of the month ', 'RFE Not Required'],
+    [A, 900, 'MONTHLY ROUTINE ACTIVITIES WR TO BE CLOSED AT THE END OF THE MONTH', 'RFE Not Required'],
+    [A, 900, 'Monthly routine task', 'RFE Submitted'],
+    ['On Hold for Parts', 0, null, 'RFE Approved'],
+    ['Closed', 0, null, 'RFE Approved'],
   ])('%s cost %s remark %s -> %s', (st, cost, rem, out) => {
     expect(rfeStatusOf({ wrStatus: st, estimatedTotalCost: cost, fcRemarks: rem })).toBe(out);
   });
@@ -68,6 +71,15 @@ describe('RFE time frame', () => {
     expect(rfeTimeFrameOf(wr(15), T, 20).label).toBe('RFE Valid Time Frame - 5 Days Remaining');
     expect(rfeTimeFrameOf(wr(13), T, 10).label).toBe('RFE Time Breach - 3 Days Crossed');
     expect(computeColumns({ ...wr(15), wrCode: '1' }, { today: T, rfeLimitDays: 20 }).rfeTimeFrameKind).toBe('valid');
+  });
+  it('blank and submitted cases', () => {
+    expect(rfeTimeFrameOf({ wrStatus: 'Issued and In Process', estimatedTotalCost: 5 }, T).label).toBe('RFE Submitted');
+    const cc = rfeTimeFrameOf({ wrStatus: 'Contractor Completed', estimatedTotalCost: 0 }, T);
+    expect(cc).toEqual({ label: '', kind: 'unknown' });
+  });
+  it('Days to Breach is the text Completed for status Completed', () => {
+    expect(daysToBreach(ago(3), T, 'Completed')).toBe('Completed');
+    expect(daysToBreach(null, T, 'Issued and In Process')).toBe('No TD');
   });
   it('other rows show their RFE status', () => {
     expect(rfeTimeFrameOf({ wrStatus: 'Assigned to Work Order', estimatedTotalCost: 5, dateTradeAssigned: ago(30) }, T).label).toBe('RFE Submitted');

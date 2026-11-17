@@ -89,6 +89,8 @@ const TD_OFFSETS: (number | null)[] = [-40, -9, -8, -1, 0, 0, 1, 5, 21, 22, 60, 
 const COSTS = [350, 1200, 4800, 15250.5, 780, 22000, 3150, 640];
 const ASSIGNED = 'Assigned to Work Order';
 const ISSUED = 'Issued and In Process';
+const COMPLETED = 'Completed';
+const ROUTINE = 'Monthly Routine Activities WR to be closed at the end of the Month';
 
 interface Wr {
   wrCode: string;
@@ -120,6 +122,7 @@ for (let i = 0; i < N; i++) {
     wrStatus = ASSIGNED;
     cost = 0;
   }
+  if (i % 13 === 12 && !(forced >= 0 && i < 55)) wrStatus = i % 26 === 12 ? COMPLETED : 'Contractor Completed';
   const tdOff = TD_OFFSETS[i % TD_OFFSETS.length];
   const code = i === N - 1 ? '0100060' : String(9100001 + i);
   const site = i === 7 ? 'ZZZZ' : SITES[(i * 5 + 1) % SITES.length];
@@ -135,7 +138,7 @@ for (let i = 0; i < N; i++) {
     siteCode: site,
     problemType: problem,
     status,
-    fcRemarks: i % 6 === 0 ? 'Test remark - waiting for sample' : i % 17 === 0 ? 'Monthly routine task - test' : '',
+    fcRemarks: i % 6 === 0 ? 'Test remark - waiting for sample' : i % 17 === 0 ? ROUTINE : '',
     n: i + 1,
   });
 }
@@ -208,14 +211,21 @@ function expectedCounts(list: Wr[]) {
       const ym = w.targetDate.slice(0, 7);
       inc(kpi, ym === REF.slice(0, 7) ? 'Present KPI' : ym < REF.slice(0, 7) ? 'Backlog KPI' : 'Future KPI');
     }
-    const assigned = w.wrStatus === ASSIGNED;
-    const routine = /monthly routine/i.test(w.fcRemarks);
+    const st = w.wrStatus;
+    const assigned = st === ASSIGNED;
+    const routine = w.fcRemarks.trim().toLowerCase() === ROUTINE.toLowerCase();
     let status: string;
     if (routine) status = 'RFE Not Required';
-    else if (assigned) status = w.cost > 0 ? 'RFE Submitted' : 'RFE To Be Submitted';
-    else status = w.cost === 0 ? 'RFE Not Required' : 'RFE Approved';
+    else if (assigned && w.cost === 0) status = 'RFE To Be Submitted';
+    else if ([ISSUED, COMPLETED, 'Contractor Completed'].includes(st) && w.cost === 0) status = 'RFE Not Required';
+    else if (assigned && w.cost > 0) status = 'RFE Submitted';
+    else status = 'RFE Approved';
     inc(rfe, status);
-    inc(tf, status === 'RFE To Be Submitted' ? (since(w) <= 14 ? 'valid' : 'breach') : status === 'RFE Submitted' ? 'submitted' : status === 'RFE Not Required' ? 'notRequired' : 'approved');
+    // Time frame is independent of the RFE status and of remarks.
+    if (st === ISSUED && w.cost === 0) inc(tf, 'notRequired');
+    else if (w.cost > 0) inc(tf, 'submitted');
+    else if (assigned) inc(tf, since(w) <= 14 ? 'valid' : 'breach');
+    else inc(tf, 'unknown');
     inc(byYear, w.dateRequested.slice(0, 4));
     sinceSum += since(w);
   }

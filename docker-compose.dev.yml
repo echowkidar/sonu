@@ -1,0 +1,25 @@
+# Local development / tests only: PostgreSQL on host port 54329.
+#   docker compose -f docker-compose.dev.yml up -d
+#   DATABASE_URL=postgres://sonu:sonu-dev@localhost:54329/sonu
+#   TEST_DATABASE_URL=postgres://sonu:sonu-dev@localhost:54329/postgres   (tests create their own databases)
+# Without Docker, `npm run dev` / `npm test` in server/ use embedded PostgreSQL instead.
+services:
+  db-dev:
+    image: postgres:17-alpine
+    container_name: sonu-db-dev
+    environment:
+      POSTGRES_DB: sonu
+      POSTGRES_USER: sonu
+      POSTGRES_PASSWORD: sonu-dev   # dev only, never used in production
+    ports:
+      - "54329:5432"
+    volumes:
+      - sonu-db-dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sonu -d sonu"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  sonu-db-dev:

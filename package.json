@@ -1,0 +1,15 @@
+{
+  "name": "sonu",
+  "private": true,
+  "description": "Convenience scripts only. Each folder (packages/core, server, web, worker) is its own npm package.",
+  "scripts": {
+    "dev:db": "docker compose -f docker-compose.dev.yml up -d",
+    "dev:db:stop": "docker compose -f docker-compose.dev.yml down",
+    "server:install": "npm --prefix server install",
+    "server:dev": "npm --prefix server run dev",
+    "server:build": "npm --prefix server run build",
+    "server:test": "npm --prefix server test",
+    "docker:build": "docker compose build",
+    "docker:up": "docker compose up -d --build"
+  }
+}
