@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { BellRing, KeyRound, Languages, Palette, UserRound } from 'lucide-react';
+import { BellRing, KeyRound, Languages, Palette, Smartphone, UserRound } from 'lucide-react';
 import { z } from 'zod';
 import { PageHeader } from '@/components/PageHeader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,7 +19,7 @@ import { useSession } from '@/lib/session';
 import { ROLE_LABELS } from '@/lib/roles';
 import type { UserView } from '@/lib/types';
 import type { ThemeMode } from '@/lib/theme';
-import { disablePush, enablePush, isPushEnabled, pushSupported } from '@/lib/push';
+import { disablePush, enablePush, isPushEnabled, pushSupported, useInstallPrompt } from '@/lib/push';
 
 const time = z.string().refine((v) => v === '' || /^([01]\d|2[0-3]):[0-5]\d$/.test(v), 'Use HH:MM, e.g. 21:00.');
 
@@ -187,6 +187,29 @@ function LooksCard({ me }: { me: UserView }) {
   );
 }
 
+/** Always-available install entry: works even after the top banner was dismissed or the app was removed. */
+function InstallCard() {
+  const { canPrompt, installed, install } = useInstallPrompt();
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2"><Smartphone className="size-5" aria-hidden /> Install the app</CardTitle>
+        <CardDescription>Put SONU on your home screen for faster access.</CardDescription>
+      </CardHeader>
+      <CardContent className="grid gap-3 text-sm">
+        {installed ? <p>SONU is already installed and open as an app.</p> : canPrompt ? (
+          <div><Button onClick={() => void install()}>Install SONU</Button></div>
+        ) : (
+          <ul className="grid list-disc gap-1.5 ps-5 text-muted-foreground">
+            <li><strong className="text-foreground">Android (Chrome):</strong> tap the ⋮ menu, scroll down, then tap "Add to home screen" or "Install app".</li>
+            <li><strong className="text-foreground">iPhone (Safari, or Chrome on iOS 16.4+):</strong> tap Share, then "Add to Home Screen".</li>
+          </ul>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function ProfilePage() {
   const { user } = useSession();
   const query = useQuery({ queryKey: ['me-profile'], queryFn: () => apiGet<UserView>(ME.profile) });
@@ -204,6 +227,7 @@ export default function ProfilePage() {
             </>
           )}
         </QueryBoundary>
+        <InstallCard />
         <PushCard />
         <PasswordCard />
       </div>
