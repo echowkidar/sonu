@@ -82,7 +82,7 @@ export function DashboardView({ data }: { data: DashboardData }) {
   const nav = useNavigate();
   const n = data.needsActionToday;
   return (
-    <div className="grid gap-5">
+    <div className="grid grid-cols-1 gap-5">
       <section aria-label="Key figures" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <KpiTile label="Total outstanding" value={data.totalOutstanding} onClick={() => nav(wrListUrl({}))} />
         <KpiTile label="Breached (target date)" value={data.breached} tone={data.breached ? 'danger' : 'neutral'} onClick={() => nav(wrListUrl({ tdStatus: 'Breached' }))} />
