@@ -37,6 +37,8 @@ COPY --from=build /app/server/migrations /app/server/migrations
 COPY --from=build /app/packages /app/packages
 COPY --from=build /app/web/dist /app/web/dist
 COPY assets /app/assets
+# Synthetic sample exports, used only by the demo seed (server/dist/demo/seed.js).
+COPY fixtures /app/fixtures
 # The named volume mounted at /data/uploads inherits this ownership on first use.
 RUN mkdir -p /data/uploads && chown -R node:node /data
 USER node
