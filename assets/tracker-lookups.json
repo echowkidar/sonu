@@ -1,0 +1,240 @@
+{
+ "site_to_facility_zone": {
+  "ECSQ": {
+   "count": "",
+   "site_name": "Al Shaqab",
+   "zone": "Zone-1",
+   "facility": "Al Shaqab",
+   "group": "Zone-1"
+  },
+  "ECSE": {
+   "count": "",
+   "site_name": "AL SHAQAB ENDURANCE OLD",
+   "zone": "Zone-1",
+   "facility": "Al Shaqab Endurance Old",
+   "group": "Zone-1"
+  },
+  "ECCR": {
+   "count": "",
+   "site_name": "Seero Fi Al Ardh Carousel",
+   "zone": "Zone-1",
+   "facility": "Seero-Carousel",
+   "group": "Zone-1"
+  },
+  "ECHO": {
+   "count": "",
+   "site_name": "New Head Quarters (2015)",
+   "zone": "Zone-1",
+   "facility": "New HQ-2015",
+   "group": "Zone-1"
+  },
+  "ECIE": {
+   "count": "",
+   "site_name": "Awsaj Academy",
+   "zone": "Zone-2",
+   "facility": "Awsaj Academy",
+   "group": "Zone-2"
+  },
+  "ECPC": {
+   "count": "",
+   "site_name": "Education City - PCs",
+   "zone": "Zone-2",
+   "facility": "QF Building # 7",
+   "group": "Zone-2"
+  },
+  "ECPS": {
+   "count": "",
+   "site_name": "QA - Sidra Secondary School",
+   "zone": "Zone-2",
+   "facility": "Sidra Ex Ph school",
+   "group": "Zone-2"
+  },
+  "ECES": {
+   "count": "",
+   "site_name": "QA - Sidra Secondary School",
+   "zone": "Zone-2",
+   "facility": "Sidra Secondary School",
+   "group": "Zone-2"
+  },
+  "ECSM": {
+   "count": "",
+   "site_name": "QA- SIDRA Primary school",
+   "zone": "Zone-2",
+   "facility": "Sidra-Prmy School",
+   "group": "Zone-2"
+  },
+  "ECQA": {
+   "count": "",
+   "site_name": "Qatar Acadamy Expansion",
+   "zone": "Zone-2",
+   "facility": "Q.Acadamy Expansion",
+   "group": "Zone-2"
+  },
+  "ECJS": {
+   "count": "",
+   "site_name": "Qatar Academy - Junior school",
+   "zone": "Zone-2",
+   "facility": "Q.Academy- Junior school",
+   "group": "Zone-2"
+  },
+  "ECSS": {
+   "count": "",
+   "site_name": "Qatar Academy - Senior School",
+   "zone": "Zone-2",
+   "facility": "Q.Academy-Senior School",
+   "group": "Zone-2"
+  },
+  "ECRC": {
+   "count": "",
+   "site_name": "Recreation Centre",
+   "zone": "Zone-2",
+   "facility": "Recreation Centre",
+   "group": "Zone-2"
+  },
+  "ECCK": {
+   "count": "",
+   "site_name": "West Car Park",
+   "zone": "Zone-2",
+   "facility": "West Car Park",
+   "group": "Zone-2"
+  },
+  "ECWG": {
+   "count": "",
+   "site_name": "Western Green Spine",
+   "zone": "Zone-2",
+   "facility": "Western Green Spine",
+   "group": "Zone-2"
+  },
+  "OESQ": {
+   "count": "",
+   "site_name": "Al Shamal North Farm",
+   "zone": "Zone-3",
+   "facility": "Shamal Farm",
+   "group": "Zone-3"
+  },
+  "AKRM": {
+   "count": "",
+   "site_name": "Flower for each spring (Ras Matbakh Facility)",
+   "zone": "Zone-3",
+   "facility": "Flower for each spring",
+   "group": "Zone-3"
+  },
+  "AKQY": {
+   "count": "",
+   "site_name": "Qatar Academy Al Khor (QAK)",
+   "zone": "Zone-3",
+   "facility": "Q.Academy Al Khor",
+   "group": "Zone-3"
+  },
+  "AWQN": {
+   "count": "",
+   "site_name": "Qatar Academy Al Wakra (QAW)",
+   "zone": "Zone-3",
+   "facility": "Q.Academy Al Wakra",
+   "group": "Zone-3"
+  },
+  "OEMD": {
+   "count": "",
+   "site_name": "QF Buildings in Msheireb Properties",
+   "zone": "Zone-3",
+   "facility": "QA Msheireb",
+   "group": "Zone-3"
+  },
+  "OEMA": {
+   "count": "",
+   "site_name": "Renad Academy",
+   "zone": "Zone-3",
+   "facility": "Renad Academy",
+   "group": "Zone-3"
+  },
+  "OETZ": {
+   "count": "",
+   "site_name": "Tariq Bin Ziad School",
+   "zone": "Zone-3",
+   "facility": "TBZ School",
+   "group": "Zone-3"
+  },
+  "OESB": {
+   "count": "",
+   "site_name": "Al Shamal Building",
+   "zone": "Zone-3",
+   "facility": "Shamal Farm",
+   "group": "Zone-3"
+  },
+  "OEOK": {
+   "count": "",
+   "site_name": "TBZ Senior school (Omer bin Al Khattab )",
+   "zone": "Zone-3",
+   "facility": "TBZ Sr.School (Omer Khattab)",
+   "group": "Zone-3"
+  },
+  "OEBB": {
+   "count": "",
+   "site_name": "Bio Bank",
+   "zone": "Zone-3",
+   "facility": "Bio Bank",
+   "group": "Zone-3"
+  },
+  "OEWH": {
+   "count": "",
+   "site_name": "Ware House",
+   "zone": "",
+   "facility": "New HQ-2015",
+   "group": "Zone-1"
+  },
+  "ECHS": {
+   "count": "",
+   "site_name": "EC High School (Future School)",
+   "zone": "Zone-2",
+   "facility": "Future School",
+   "group": "Zone-2"
+  },
+  "ECMH": {
+   "count": "MFH Museum",
+   "site_name": "",
+   "zone": "Zone-1",
+   "facility": "MFH Museum",
+   "group": "Zone-1"
+  },
+  "ECSN": {
+   "count": "",
+   "site_name": "",
+   "zone": "",
+   "facility": "QA Sidra School - NEW",
+   "group": "Zone-2"
+  },
+  "ECLV": {
+   "count": "QF LVQ Warehouse (GWC) for Arts",
+   "site_name": "",
+   "zone": "",
+   "facility": "New HQ-2015",
+   "group": "Zone-1"
+  },
+  "ECQB": {
+   "count": "Quranic Botanic Garden",
+   "site_name": "",
+   "zone": "Zone-1",
+   "facility": "Botanic Garden",
+   "group": "Zone-1"
+  }
+ },
+ "problem_type_to_discipline": {
+  "CIVI": "Civil",
+  "ELECE": "Electrical",
+  "INSTE": "Instrumentation",
+  "MECHE": "Mechanical",
+  "MECH": "Mechanical",
+  "HVACE": "HVAC",
+  "INST": "Instrumentation",
+  "GSER": "General Service",
+  "ELEC": "Electrical",
+  "HVAC": "HVAC",
+  "OPERATIONS": "Operations",
+  "SIMP": "General Service",
+  "CAPM|INST": "Instrumentation",
+  "CAPM|ELEC": "Electrical",
+  "CAPM|CIVI": "Civil",
+  "CAPM|HVAC": "HVAC",
+  "CAPM|MECH": "Mechanical"
+ }
+}

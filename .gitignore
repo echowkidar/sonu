@@ -1,0 +1,32 @@
+node_modules/
+dist/
+build/
+coverage/
+*.log
+*.tsbuildinfo
+
+# local environment and secrets
+.env
+.env.*
+!.env.example
+
+# data that must never be committed
+uploads/
+data/
+pgdata/
+/imports-real/
+*.real.xlsx
+*.real.xls
+
+# test output
+test-results/
+playwright-report/
+.vitest/
+tmp/
+.tmp/
+
+# editors / OS
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
