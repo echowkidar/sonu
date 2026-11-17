@@ -10,7 +10,7 @@ import { ApiError } from '@/lib/api';
 
 export function AuthLayout({ title, subtitle, children, footer }: { title: string; subtitle?: string; children: React.ReactNode; footer?: React.ReactNode }) {
   return (
-    <div className="relative grid min-h-dvh place-items-center px-4 py-10">
+    <div className="relative grid min-h-dvh content-end justify-items-center px-4 py-10 sm:place-items-center">
       <SceneBackdrop />
       <div className="w-full max-w-sm">
         <div className="mb-6 flex justify-center"><Logo /></div>

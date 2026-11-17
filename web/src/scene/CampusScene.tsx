@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import type { Group } from 'three';
 
 /** Abstract campus: a grid of blocks of different heights, turning very slowly. Calm, low-poly, no textures. */
@@ -27,6 +27,19 @@ function Campus({ accent }: { accent: string }) {
   );
 }
 
+/** Narrow canvases (phone top band) pull the camera back so the whole campus fits. Wide screens keep the original view. */
+function FitCamera() {
+  const camera = useThree((st) => st.camera);
+  const size = useThree((st) => st.size);
+  React.useEffect(() => {
+    const aspect = size.width / Math.max(1, size.height);
+    const k = aspect < 1.4 ? 1.4 / aspect : 1;
+    camera.position.set(5.5 * k, 5 * k, 7.5 * k);
+    camera.lookAt(0, 0, 0);
+  }, [camera, size.width, size.height]);
+  return null;
+}
+
 export default function CampusScene({ active, accent = '#3b4cca' }: { active: boolean; accent?: string }) {
   return (
     <Canvas
@@ -39,6 +52,7 @@ export default function CampusScene({ active, accent = '#3b4cca' }: { active: bo
     >
       <ambientLight intensity={0.9} />
       <directionalLight position={[5, 8, 4]} intensity={1.1} />
+      <FitCamera />
       <Campus accent={accent} />
     </Canvas>
   );

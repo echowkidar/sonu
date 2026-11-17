@@ -49,7 +49,8 @@ export function SceneBackdrop() {
     <div ref={host} className="login-fallback pointer-events-none absolute inset-0 -z-10 overflow-hidden" aria-hidden>
       {ready && (
         <React.Suspense fallback={null}>
-          <div className="absolute inset-0 animate-in fade-in duration-700">
+          {/* Phones: scene only in the top band, above the sign-in card (which sits lower). */}
+          <div className="absolute inset-x-0 top-0 h-[42dvh] animate-in fade-in duration-700 sm:inset-0 sm:h-auto">
             <CampusScene active={visible && tabVisible} />
           </div>
         </React.Suspense>
