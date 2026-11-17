@@ -1,0 +1,86 @@
+{
+  "list": "pending_work_requests",
+  "from": "pending-work-requests.xlsx",
+  "to": "pending-work-requests-changed.xlsx",
+  "events": [
+    {
+      "type": "wr.stage_changed",
+      "key": "9100001"
+    },
+    {
+      "type": "wr.changed",
+      "key": "9100002",
+      "fields": [
+        "estimatedTotalCost"
+      ]
+    },
+    {
+      "type": "wr.stage_changed",
+      "key": "9100004"
+    },
+    {
+      "type": "wr.gone",
+      "key": "9100005"
+    },
+    {
+      "type": "wr.stage_changed",
+      "key": "9100006"
+    },
+    {
+      "type": "wr.changed",
+      "key": "9100008",
+      "fields": [
+        "targetDate"
+      ]
+    },
+    {
+      "type": "wr.changed",
+      "key": "9100009",
+      "fields": [
+        "targetDate"
+      ]
+    },
+    {
+      "type": "wr.changed",
+      "key": "9100010",
+      "fields": [
+        "targetDate"
+      ]
+    },
+    {
+      "type": "wr.stage_changed",
+      "key": "9100010"
+    },
+    {
+      "type": "wr.gone",
+      "key": "9100017"
+    },
+    {
+      "type": "wr.changed",
+      "key": "9100018",
+      "fields": [
+        "estimatedTotalCost"
+      ]
+    },
+    {
+      "type": "wr.gone",
+      "key": "9100033"
+    },
+    {
+      "type": "wr.gone",
+      "key": "9100048"
+    },
+    {
+      "type": "wr.seen",
+      "key": "9100101"
+    },
+    {
+      "type": "wr.seen",
+      "key": "9100102"
+    },
+    {
+      "type": "wr.seen",
+      "key": "9100103"
+    }
+  ]
+}

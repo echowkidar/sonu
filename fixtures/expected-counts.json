@@ -1,0 +1,289 @@
+{
+  "referenceDate": "2026-11-09",
+  "totalOutstanding": 60,
+  "breached": 23,
+  "backlogKpi": 15,
+  "averageDaysSinceAssigned": 94.3,
+  "ageBuckets": {
+    "Within Month": 25,
+    "More Than One month": 12,
+    "More Than Two month": 6,
+    "More Than Three month": 17
+  },
+  "kpiSplit": {
+    "Backlog KPI": 15,
+    "Present KPI": 34,
+    "Future KPI": 8,
+    "No TD": 3
+  },
+  "tdSplit": {
+    "Breached": 23,
+    "TD Valid": 34,
+    "No TD": 3
+  },
+  "rfeStatus": {
+    "RFE Submitted": 9,
+    "RFE Not Required": 16,
+    "RFE To Be Submitted": 25,
+    "RFE Approved": 10
+  },
+  "rfeTimeFrameSplit": {
+    "submitted": 9,
+    "notRequired": 16,
+    "valid": 11,
+    "breach": 14,
+    "approved": 10
+  },
+  "byYear": {
+    "2024": 2,
+    "2025": 4,
+    "2026": 54
+  },
+  "statusByDiscipline": {
+    "Awaiting Information - TDGI": {
+      "HVAC": 2,
+      "Civil": 1,
+      "Electrical": 1
+    },
+    "Awaiting Material - TDGI": {
+      "Civil": 2,
+      "Electrical": 2
+    },
+    "Awaiting Information - QF": {
+      "Instrumentation": 1,
+      "Unmapped": 1,
+      "Operations": 1,
+      "Mechanical": 1
+    },
+    "Completed": {
+      "HVAC": 2,
+      "Civil": 1,
+      "Electrical": 1
+    },
+    "RFE to be submit - TDGI": {
+      "Operations": 1,
+      "Mechanical": 1,
+      "Instrumentation": 1,
+      "General Service": 1
+    },
+    "Work In Progress - TDGI": {
+      "Electrical": 1,
+      "HVAC": 2,
+      "Civil": 1
+    },
+    "Awaiting budget code - QF": {
+      "Electrical": 2,
+      "Civil": 1
+    },
+    "To be cancelled": {
+      "Mechanical": 1,
+      "Instrumentation": 1,
+      "General Service": 1,
+      "Operations": 1
+    },
+    "Awaiting Quote - TDGI": {
+      "Civil": 2,
+      "Electrical": 2
+    },
+    "(No status)": {
+      "Civil": 1,
+      "Electrical": 1
+    },
+    "RFE to be Resubmitted - TDGI": {
+      "HVAC": 2,
+      "Civil": 1,
+      "Electrical": 1
+    },
+    "Material received under planning - TDGI": {
+      "Mechanical": 1,
+      "Instrumentation": 1,
+      "General Service": 1,
+      "Operations": 1
+    },
+    "Awaiting Approval - QF": {
+      "Civil": 2,
+      "Electrical": 2
+    },
+    "Awaiting Material - QF": {
+      "HVAC": 2,
+      "Civil": 1
+    },
+    "Awaiting Access - QF": {
+      "Mechanical": 1,
+      "Instrumentation": 1,
+      "General Service": 1,
+      "Operations": 1
+    },
+    "Duplicate": {
+      "Civil": 2,
+      "Electrical": 2
+    }
+  },
+  "statusByZone": {
+    "Awaiting Information - TDGI": {
+      "Zone-1": 2,
+      "Zone-3": 1,
+      "Zone-2": 1
+    },
+    "Awaiting Material - TDGI": {
+      "Zone-2": 1,
+      "Zone-1": 2,
+      "Zone-3": 1
+    },
+    "Awaiting Information - QF": {
+      "Zone-3": 1,
+      "Zone-2": 1,
+      "Zone-1": 2
+    },
+    "Completed": {
+      "Zone-1": 1,
+      "Zone-3": 1,
+      "Zone-2": 2
+    },
+    "RFE to be submit - TDGI": {
+      "Zone-2": 3,
+      "Zone-1": 1
+    },
+    "Work In Progress - TDGI": {
+      "Zone-1": 1,
+      "Zone-3": 2,
+      "Zone-2": 1
+    },
+    "Awaiting budget code - QF": {
+      "Zone-2": 1,
+      "Zone-3": 2
+    },
+    "To be cancelled": {
+      "Unmapped": 1,
+      "Zone-2": 1,
+      "Zone-1": 1,
+      "Zone-3": 1
+    },
+    "Awaiting Quote - TDGI": {
+      "Zone-2": 2,
+      "Zone-1": 1,
+      "Zone-3": 1
+    },
+    "(No status)": {
+      "Zone-1": 1,
+      "Zone-3": 1
+    },
+    "RFE to be Resubmitted - TDGI": {
+      "Zone-3": 2,
+      "Zone-2": 1,
+      "Zone-1": 1
+    },
+    "Material received under planning - TDGI": {
+      "Zone-2": 2,
+      "Zone-1": 1,
+      "Zone-3": 1
+    },
+    "Awaiting Approval - QF": {
+      "Zone-3": 1,
+      "Zone-2": 2,
+      "Zone-1": 1
+    },
+    "Awaiting Material - QF": {
+      "Zone-2": 2,
+      "Zone-1": 1
+    },
+    "Awaiting Access - QF": {
+      "Zone-1": 2,
+      "Zone-3": 1,
+      "Zone-2": 1
+    },
+    "Duplicate": {
+      "Zone-2": 2,
+      "Zone-1": 1,
+      "Zone-3": 1
+    }
+  },
+  "statusByFacility": {
+    "Awaiting Information - TDGI": {
+      "New HQ-2015": 2,
+      "Flower for each spring": 1,
+      "Q.Acadamy Expansion": 1
+    },
+    "Awaiting Material - TDGI": {
+      "Q.Acadamy Expansion": 1,
+      "Seero-Carousel": 2,
+      "QA Msheireb": 1
+    },
+    "Awaiting Information - QF": {
+      "QA Msheireb": 1,
+      "Q.Academy- Junior school": 1,
+      "New HQ-2015": 2
+    },
+    "Completed": {
+      "New HQ-2015": 1,
+      "Bio Bank": 1,
+      "QA Sidra School - NEW": 1,
+      "Awsaj Academy": 1
+    },
+    "RFE to be submit - TDGI": {
+      "QA Sidra School - NEW": 2,
+      "Awsaj Academy": 1,
+      "Al Shaqab": 1
+    },
+    "Work In Progress - TDGI": {
+      "Al Shaqab": 1,
+      "Shamal Farm": 2,
+      "QF Building # 7": 1
+    },
+    "Awaiting budget code - QF": {
+      "QF Building # 7": 1,
+      "Flower for each spring": 2
+    },
+    "To be cancelled": {
+      "Unmapped": 1,
+      "Q.Acadamy Expansion": 1,
+      "Seero-Carousel": 1,
+      "QA Msheireb": 1
+    },
+    "Awaiting Quote - TDGI": {
+      "Awsaj Academy": 1,
+      "Al Shaqab": 1,
+      "Shamal Farm": 1,
+      "QF Building # 7": 1
+    },
+    "(No status)": {
+      "New HQ-2015": 1,
+      "QA Msheireb": 1
+    },
+    "RFE to be Resubmitted - TDGI": {
+      "QA Msheireb": 1,
+      "Q.Academy- Junior school": 1,
+      "New HQ-2015": 1,
+      "Bio Bank": 1
+    },
+    "Material received under planning - TDGI": {
+      "QF Building # 7": 1,
+      "New HQ-2015": 1,
+      "Flower for each spring": 1,
+      "Q.Acadamy Expansion": 1
+    },
+    "Awaiting Approval - QF": {
+      "Bio Bank": 1,
+      "QA Sidra School - NEW": 1,
+      "Awsaj Academy": 1,
+      "Al Shaqab": 1
+    },
+    "Awaiting Material - QF": {
+      "Q.Acadamy Expansion": 1,
+      "Seero-Carousel": 1,
+      "Q.Academy- Junior school": 1
+    },
+    "Awaiting Access - QF": {
+      "Al Shaqab": 1,
+      "Shamal Farm": 1,
+      "QF Building # 7": 1,
+      "New HQ-2015": 1
+    },
+    "Duplicate": {
+      "Q.Academy- Junior school": 1,
+      "New HQ-2015": 1,
+      "Bio Bank": 1,
+      "QA Sidra School - NEW": 1
+    }
+  }
+}
