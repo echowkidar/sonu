@@ -352,7 +352,7 @@ export default async function jobRoutes(app: FastifyInstance): Promise<void> {
     const recipients = [...new Set([job.assigned_by, job.owner_id].filter((x): x is string => Boolean(x) && x !== scope.user.id))];
     await notify(app, {
       contractorId: scope.contractorId, event: 'job.done', recipients, title: `Job done: WR ${job.wr_code} by ${job.assignee_name}`,
-      body: input.note, link: `/wr/${job.wr_code}`, entityType: 'assignment', entityId: job.id, workRequestId: job.work_request_id, channels: ['in_app', 'push'],
+      body: input.note, link: `/work-requests/${job.wr_code}`, entityType: 'assignment', entityId: job.id, workRequestId: job.work_request_id, channels: ['in_app', 'push'],
     });
     return { ...jobView((await getJob(app, scope, job.id)).job), attachments: r.attachmentIds };
   });

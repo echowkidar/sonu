@@ -489,7 +489,7 @@ async function writeEvents(
         if (sup.length) {
           notes.push({
             event: 'wr.new', recipients: sup, title: `New WR ${e.key} in ${ref.work_team_code}`,
-            body: ref.building_name ? `Building: ${ref.building_name}` : null, link: `/wr/${e.key}`, entityType: 'work_request', entityId: e.key,
+            body: ref.building_name ? `Building: ${ref.building_name}` : null, link: `/work-requests/${e.key}`, entityType: 'work_request', entityId: e.key,
             workRequestId: ref.id, channels: ['in_app', 'push'],
           });
         }
@@ -503,7 +503,7 @@ async function writeEvents(
         );
         if (ref.owner_id && e.stageField === 'wrStatus' && isCompleted(e.to)) {
           notes.push({
-            event: 'wr.closed', recipients: [ref.owner_id], title: `WR ${e.key} is now ${String(e.to)}`, link: `/wr/${e.key}`,
+            event: 'wr.closed', recipients: [ref.owner_id], title: `WR ${e.key} is now ${String(e.to)}`, link: `/work-requests/${e.key}`,
             entityType: 'work_request', entityId: e.key, workRequestId: ref.id, channels: ['in_app', 'push'],
           });
         }
@@ -520,7 +520,7 @@ async function writeEvents(
         );
         if (ref.owner_id) {
           notes.push({
-            event: 'wr.gone', recipients: [ref.owner_id], title: `WR ${e.key} left the open list (closed or cancelled by QF)`, link: `/wr/${e.key}`,
+            event: 'wr.gone', recipients: [ref.owner_id], title: `WR ${e.key} left the open list (closed or cancelled by QF)`, link: `/work-requests/${e.key}`,
             entityType: 'work_request', entityId: e.key, workRequestId: ref.id, channels: ['in_app', 'push'],
           });
         }
@@ -530,7 +530,7 @@ async function writeEvents(
       if (ref?.owner_id) {
         notes.push({
           event: 'wr.returned', recipients: [ref.owner_id], title: `WR ${e.key} returned by QF`, body: `QF stage: ${String(e.to ?? '')}`,
-          link: `/wr/${e.key}`, entityType: 'work_request', entityId: e.key, workRequestId: ref.id, channels: ['in_app', 'push', 'email'],
+          link: `/work-requests/${e.key}`, entityType: 'work_request', entityId: e.key, workRequestId: ref.id, channels: ['in_app', 'push', 'email'],
         });
       }
     } else if (type === 'rfe.approved') {
@@ -539,7 +539,7 @@ async function writeEvents(
       if (rec.length) {
         notes.push({
           event: 'rfe.approved', recipients: rec, title: `RFE approved for WR ${e.key} - LPO to be raised`, body: `Approved on ${String(e.to ?? '')}`,
-          link: `/wr/${e.key}`, entityType: 'work_request', entityId: e.key, workRequestId: ref?.id ?? null, channels: ['in_app', 'push', 'email'],
+          link: `/work-requests/${e.key}`, entityType: 'work_request', entityId: e.key, workRequestId: ref?.id ?? null, channels: ['in_app', 'push', 'email'],
         });
       }
     } else if (type === 'rfe.comment_received') {
@@ -547,7 +547,7 @@ async function writeEvents(
       if (ref?.owner_id) {
         notes.push({
           event: 'rfe.comment', recipients: [ref.owner_id], title: `QF comment on WR ${e.key}`, body: (e.data?.comments as string | null) ?? null,
-          link: `/wr/${e.key}`, entityType: 'work_request', entityId: e.key, workRequestId: ref.id, channels: ['in_app', 'push', 'email'],
+          link: `/work-requests/${e.key}`, entityType: 'work_request', entityId: e.key, workRequestId: ref.id, channels: ['in_app', 'push', 'email'],
         });
       }
     } else if (type === 'money.changed') {

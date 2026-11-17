@@ -415,7 +415,7 @@ export default async function workRequestRoutes(app: FastifyInstance): Promise<v
     if (notifyOwner) {
       await notify(app, {
         contractorId: scope.contractorId, event: 'wr.owner_assigned', recipients: [notifyOwner], title: `You now own WR ${w.wr_code}`,
-        body: w.building_name ?? null, link: `/wr/${w.wr_code}`, entityType: 'work_request', entityId: w.wr_code, workRequestId: w.id, channels: ['in_app', 'push'],
+        body: w.building_name ?? null, link: `/work-requests/${w.wr_code}`, entityType: 'work_request', entityId: w.wr_code, workRequestId: w.id, channels: ['in_app', 'push'],
       });
     }
     const ctx = await loadComputeContext(app, app.db, scope.contractorId);

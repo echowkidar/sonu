@@ -3,7 +3,7 @@
  *
  *   await notify(app, {
  *     contractorId, event: 'wr.returned', userIds: [ownerId],          // or roles: ['coordinator'], workTeamIds
- *     title: 'WR 123456 returned by QF', body: '...', url: '/wr/123456',
+ *     title: 'WR 123456 returned by QF', body: '...', url: '/work-requests/123456',
  *     record: { type: 'work_request', id: wrId, workRequestId: wrId },
  *   });
  *   // Legacy shape still works: { recipients, link, entityType, entityId, workRequestId }.
@@ -42,7 +42,7 @@ export interface NotifyInput {
   workTeamIds?: string[];
   title: string;
   body?: string | null;
-  /** Path inside SONU ("/wr/123456") or absolute URL. */
+  /** Path inside SONU ("/work-requests/123456") or absolute URL. */
   url?: string | null;
   /** Legacy alias of url. */
   link?: string | null;

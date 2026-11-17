@@ -84,7 +84,7 @@ export async function runDeadlineSweep(app: FastifyInstance, contractorId?: stri
       else out.warnings++;
       if (recipients.length) {
         await notify(app, {
-          contractorId: cid, event: type, recipients, title, link: `/wr/${w.wr_code}`, entityType: 'work_request', entityId: w.wr_code,
+          contractorId: cid, event: type, recipients, title, link: `/work-requests/${w.wr_code}`, entityType: 'work_request', entityId: w.wr_code,
           workRequestId: w.id, channels,
         });
       }

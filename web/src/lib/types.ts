@@ -57,7 +57,118 @@ export interface MarafiqConnection {
   enabledLists: string[] | null; lastSuccess: string | null; lastSignInAt: string | null; lastError: string | null; updatedAt: string;
 }
 
-export type BulkKind = 'contractors' | 'users' | 'subcontractors';
+// ───── Operational API (docs/API-ops.md) ─────
+export interface Matrix {
+  rows: string[]; columns: string[]; cells: Record<string, Record<string, number>>;
+  rowTotals: Record<string, number>; columnTotals: Record<string, number>; total: number;
+}
+export interface Deadline {
+  ruleKey: string; ruleName: string; stage: string | null; dayNumber: number; limit: number; state: string; dueDate: string | null; warningsDue?: unknown; breached: boolean;
+}
+export interface DeadlineCard {
+  wrCode: string; buildingName: string | null; description: string | null; workTeamCode: string | null; ownerName: string | null; deadline: Deadline | null;
+}
+export interface DashboardData {
+  today: string;
+  totalOutstanding: number; breached: number; backlogKpi: number; averageAge: number; averageAgeFromRequested?: number | null;
+  byDiscipline: Matrix; byZone: Matrix; byFacility: Matrix; byYear: Record<string, number>;
+  ageBuckets: Record<string, number>; kpiSplit: Record<string, number>; tdSplit: Record<string, number>; rfeTimeFrameSplit: Record<string, number>;
+  descriptiveStages: { stage: number; label: string; count: number }[] | null;
+  needsActionToday: {
+    deadlinesToday: DeadlineCard[]; deadlinesTodayCount: number; breachedDeadlines: number;
+    unowned: DeadlineCard[]; unownedCount: number; returns: DeadlineCard[]; returnsCount: number; unansweredComments: number;
+  };
+  dataAsOf: { at: string | null; by: string | null; listKey: string | null } | null;
+}
+
+export interface WrView {
+  id: string; wrCode: string; wrStatus: string | null; descriptiveStatus: string | null; qfStage: number | null; ptwCode: string | null; ptwStatus: string | null;
+  requestor?: string | null; siteCode: string | null; siteName: string | null; buildingCode: string | null; buildingName: string | null; floorCode: string | null; roomCode: string | null;
+  problemType: string | null; workTeamCode: string | null; priority: string | null; description: string | null; dateRequested: string | null; targetDate: string | null;
+  dateTradeAssigned: string | null; estimatedTotalCost?: number | null; withRfe: boolean | null; progressPct: number | null; goneAt: string | null;
+  internal: { ownerId: string | null; ownerName: string | null; criterion: number | null; contractorStatus: string | null; fcRemarks: string | null; statusSource: string | null; dueAt: string | null; breachLevel: number | null };
+  computed: {
+    month: string; daysToBreach: number | null; tdStatus: string; kpi: string; rfeSubmittedOn: string | null; rfeApprovedOn: string | null; discipline: string; facility: string; zone: string;
+    rfeStatus: string; daysSinceRequested: number | null; rfeTimeFrame: string; rfeTimeFrameKind: string;
+  };
+  deadline: Deadline | null;
+  suggestedStatus: { status: string; reason: string } | null;
+}
+export interface WrList { today: string; rfeLimitDays: number; total: number; page: number; pageSize: number; items: WrView[] }
+
+export interface TimelineEvent { id: string; kind: string; at: string; type: string; source: string; payload: Record<string, unknown> | null; userName: string | null }
+export interface WrAttachment { id: string; ownerType: string; ownerId: string; fileName: string; mime: string; sizeBytes: number; createdAt: string }
+export interface WrAssignment { id: string; status: string; plannedDate: string | null; note: string | null; createdAt: string; assigneeId: string; assigneeName: string; assignedByName: string | null }
+export interface WrDetail extends WrView {
+  today: string; marafiqUrl: string; timeline: TimelineEvent[]; assignments: WrAssignment[]; attachments: WrAttachment[];
+  rfe: { submittedOn: string | null; approvedOn: string | null; pendingWith: string | null; rfeAmount: number | null; bpaReleaseRef: string | null } | null;
+  rfeComments: { id: string; logId: string | null; text: string; createdBy: string | null; createdOn: string | null; sendTo: string | null; isDone: boolean | null; answeredInSonuAt: string | null }[];
+  permit: { ptwCode: string; status: string | null; dateStart: string | null; dateUpto: string | null; dateIssued: string | null; applicant: string | null; controller: string | null; authority: string | null } | null;
+  moneyTrail?: Record<string, string | number | null> | null;
+}
+
+export interface Person { id: string; fullName: string; role: string; workTeams: string[] }
+export interface Meta {
+  contractorStatuses: { name: string; side: string }[];
+  roles: { key: string; label: string }[];
+  criteria: { value: number; label: string }[];
+  ageBuckets: string[]; kpis: string[]; tdStatuses: string[]; rfeTimeFrameKinds: string[];
+  qfStages: { stage: number; label: string }[];
+  lookups: { zones: string[]; facilities: string[]; disciplines: string[] };
+  workTeams: { id: string; code: string; name: string | null; zone: string | null }[];
+  people: Person[];
+  lists: { key: string; title: string; menuPath: string; captions: string[]; required: string[] }[];
+}
+
+export interface WorkCard {
+  wrCode: string; buildingName: string | null; roomCode: string | null; description: string; wrStatus: string | null; qfStage: number | null;
+  criterion: number | null; contractorStatus: string | null;
+  dayCounter: { day: number; limit: number; state: string; dueDate: string | null; rule: string } | null; rfeTimeFrame: string | null;
+}
+export type WorkGroupKey = 'take_ownership' | 'returned' | 'answer_qf' | 'classify' | 'estimate_due' | 'assign_technician' | 'other';
+export interface MyWorkData { today: string; owned: number; groups: Record<WorkGroupKey, WorkCard[]> }
+
+export interface NotificationItem {
+  id: string; event: string; title: string; body: string | null; link: string | null; url: string | null; workRequestId: string | null;
+  createdAt: string; readAt: string | null;
+}
+export interface NotificationList { items: NotificationItem[]; unread: number; total: number }
+
+export interface ImportResult {
+  ok: boolean; batchId: string; listKey: string; rowsRead: number; new: number; changed: number; gone: number; events: number; unchanged: number; warnings: string[];
+}
+export interface ImportBatch {
+  id: string; listKey: string; title: string; source: string; fileName: string | null; status: string; result: 'ok' | 'unchanged' | 'failed'; error: string | null;
+  rowsRead: number | null; new: number | null; changed: number | null; gone: number | null; events: number | null; warnings: unknown; user: { id: string; fullName: string } | null; createdAt: string;
+}
+export interface ExpectedList { key: string; title: string; menuPath: string; lastImportAt: string | null; rows: number | null; lastBatchId: string | null }
+export interface TrackerPreview {
+  id: string; fileName: string; rows: number; matched: number;
+  matchedItems: { wrCode: string; status: string | null; rawStatus: string | null; fcRemarks: string | null; current: unknown }[];
+  unknownWrCodes: string[];
+  unknownStatuses: { value: string; count: number; candidates: string[]; suggested: string | null }[];
+  mappedStatuses: unknown[];
+}
+
+export type JobStatus = 'assigned' | 'started' | 'done';
+export interface Job {
+  id: string; status: JobStatus; plannedDate: string | null; note: string | null; createdAt: string; startedAt: string | null; doneAt: string | null;
+  assignee: { id: string; fullName: string }; assignedBy: { id: string; fullName: string } | null;
+  wr: {
+    code: string; siteName: string | null; buildingCode: string | null; buildingName: string | null; floorCode: string | null; roomCode: string | null;
+    description: string | null; problemType: string | null; priority: string | null; workTeamCode: string | null; ptwCode: string | null; ptwStatus: string | null; permitDateUpto: string | null;
+  };
+}
+export interface JobUpdate { id: string; note: string | null; statusTo: string | null; at: string; userName: string | null; attachments: { id: string; fileName: string; mime: string; sizeBytes: number }[] }
+export interface JobDetail extends Job { canAct: boolean; updates: JobUpdate[] }
+export interface MyJobsData { today: string; todayJobs: Job[]; open: Job[]; doneRecently: Job[] }
+
+export interface RfeLineInput {
+  lineType: 'Item' | 'Discount' | 'Margin'; vendorItemName: string; uom: string; lineNumber: string; poNumber: string; bpaItem: string; accountCode: string;
+  estQty: number; unitPrice: number; markUp: number;
+}
+
+export type BulkKind ='contractors' | 'users' | 'subcontractors';
 export type BulkAction = 'add' | 'update' | 'problem';
 export interface BulkRowPreview {
   sheet: string; rowNumber: number; action: BulkAction; key: string;

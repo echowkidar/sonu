@@ -101,7 +101,40 @@ export async function api<T = unknown>(path: string, opts: RequestOptions = {}):
   return (ct.includes('application/json') ? await res.json() : await res.text()) as T;
 }
 
-export const apiGet = <T>(path: string, opts?: Omit<RequestOptions, 'method' | 'body' | 'form'>) => api<T>(path, { ...opts, method: 'GET' });
+/** Binary download (xlsx). Returns the blob and the file name from Content-Disposition. Errors are ApiError like `api`. */
+export async function apiBlob(path: string, opts: Pick<RequestOptions, 'method' | 'body' | 'query'> = {}): Promise<{ blob: Blob; fileName: string | null }> {
+  const headers: Record<string, string> = { [CSRF_HEADER]: CSRF_VALUE };
+  let body: BodyInit | undefined;
+  if (opts.body !== undefined) { headers['Content-Type'] = 'application/json'; body = JSON.stringify(opts.body); }
+  let res: Response;
+  try {
+    res = await fetch(buildUrl(path, opts.query), { method: opts.method ?? 'GET', headers, body, credentials: 'include' });
+  } catch {
+    throw new ApiError(0, 'network_error', 'Cannot reach the server. Check your connection and try again.');
+  }
+  if (!res.ok) {
+    const err = await parseError(res);
+    if (res.status === 401) onUnauthorized();
+    throw err;
+  }
+  const cd = res.headers.get('content-disposition') ?? '';
+  const m = /filename="?([^";]+)"?/i.exec(cd);
+  return { blob: await res.blob(), fileName: m?.[1] ?? null };
+}
+
+/** Save a blob through a temporary link (works on phones and desktops). */
+export function saveBlob(blob: Blob, fileName: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+export const apiGet =<T>(path: string, opts?: Omit<RequestOptions, 'method' | 'body' | 'form'>) => api<T>(path, { ...opts, method: 'GET' });
 export const apiPost = <T>(path: string, body?: unknown, opts?: Omit<RequestOptions, 'method' | 'body' | 'form'>) => api<T>(path, { ...opts, method: 'POST', body });
 export const apiPut = <T>(path: string, body?: unknown) => api<T>(path, { method: 'PUT', body });
 export const apiPatch = <T>(path: string, body?: unknown) => api<T>(path, { method: 'PATCH', body });

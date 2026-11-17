@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router';
-import { Bell, Database, Ellipsis } from 'lucide-react';
+import { AlertTriangle, Bell, Database, Ellipsis } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { Logo } from '@/components/Logo';
 import { Button } from '@/components/ui/button';
@@ -15,7 +15,7 @@ import { InstallPrompt } from './InstallPrompt';
 import { ThemeToggle } from './ThemeToggle';
 import { UserMenu } from './UserMenu';
 import { useThemeContext } from './ThemeContext';
-import { formatAsOf, useDataAsOf, useUnreadCount } from './slots';
+import { formatAsOf, isStale, useDataAsOf, useUnreadCount } from './slots';
 
 function SideLink({ item }: { item: NavItem }) {
   return (
@@ -103,9 +103,11 @@ export function AppShell() {
         <InstallPrompt />
         <header className="safe-top sticky top-0 z-20 flex min-h-14 items-center gap-2 border-b bg-card/95 px-3 backdrop-blur md:px-5">
           <Link to="/" className="md:hidden"><Logo mark /></Link>
-          <p data-testid="data-as-of" className="flex min-w-0 flex-1 items-center gap-1.5 text-xs text-muted-foreground sm:text-sm">
-            <Database className="size-4 shrink-0" aria-hidden />
-            <span className="truncate">Marafiq data as of {formatAsOf(asOf)}</span>
+          <p data-testid="data-as-of" data-stale={!asOf || isStale(asOf) ? 'true' : 'false'} className={cn('flex min-w-0 flex-1 items-center gap-1.5 text-xs sm:text-sm', isStale(asOf) ? 'font-medium text-warning' : 'text-muted-foreground')}>
+            {isStale(asOf) ? <AlertTriangle className="size-4 shrink-0" aria-hidden /> : <Database className="size-4 shrink-0" aria-hidden />}
+            <span className="truncate">
+              {asOf ? `Marafiq data as of ${formatAsOf(asOf)}${isStale(asOf) ? ' (older than 24 hours)' : ''}` : 'No Marafiq data yet — upload an export'}
+            </span>
           </p>
           <Button asChild variant="ghost" size="icon" className="relative" aria-label={unread ? `Notifications, ${unread} unread` : 'Notifications'}>
             <Link to="/notifications">

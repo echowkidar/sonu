@@ -47,6 +47,35 @@ export const ADMIN = {
   bulkTemplate: (kind: string) => `/api/admin/bulk-import/templates/${kind}`,
 } as const;
 
+/** Operational API (docs/API-ops.md). */
+export const OPS = {
+  dataAsOf: '/api/data-as-of',
+  notifications: '/api/notifications',
+  notificationRead: (id: string) => `/api/notifications/${id}/read`,
+  notificationsReadAll: '/api/notifications/read-all',
+  meta: '/api/meta',
+  dashboard: '/api/dashboard',
+  masterExport: '/api/exports/master.xlsx',
+  workRequests: '/api/work-requests',
+  workRequest: (code: string) => `/api/work-requests/${encodeURIComponent(code)}`,
+  workRequestsBulk: '/api/work-requests/bulk',
+  rfeFile: (code: string) => `/api/work-requests/${encodeURIComponent(code)}/rfe-file`,
+  assignments: (code: string) => `/api/work-requests/${encodeURIComponent(code)}/assignments`,
+  myWork: '/api/my-work',
+  imports: '/api/imports',
+  importsExpected: '/api/imports/expected',
+  trackerPreview: '/api/imports/tracker',
+  trackerConfirm: (id: string) => `/api/imports/tracker/confirm/${id}`,
+  myJobs: '/api/my-jobs',
+  teamJobs: '/api/team-jobs',
+  job: (id: string) => `/api/jobs/${id}`,
+  jobStart: (id: string) => `/api/jobs/${id}/start`,
+  jobUpdates: (id: string) => `/api/jobs/${id}/updates`,
+  jobDone: (id: string) => `/api/jobs/${id}/done`,
+  attachment: (id: string) => `/api/attachments/${id}`,
+  whatsappLink: '/api/whatsapp/link',
+} as const;
+
 export const ME = {
   profile: '/api/me/profile',
   password: '/api/auth/password',

@@ -14,15 +14,18 @@ export interface JobCardProps {
   permit?: string;
   day?: number;
   dayOf?: number;
-  action: BigAction;
+  /** Omit for a finished job (no button). */
+  action?: BigAction;
   onAction?: () => void;
+  /** Replaces the single button (e.g. Update + Done together). */
+  footer?: React.ReactNode;
   onOpen?: () => void;
   className?: string;
   children?: React.ReactNode;
 }
 
 /** Phone job card: code and place on top, status + day counter, one big thumb button at the bottom. */
-export function JobCard({ code, title, location, status, permit, day, dayOf, action, onAction, onOpen, className, children }: JobCardProps) {
+export function JobCard({ code, title, location, status, permit, day, dayOf, action, onAction, footer, onOpen, className, children }: JobCardProps) {
   return (
     <Card className={cn('overflow-hidden', className)}>
       <div
@@ -46,9 +49,11 @@ export function JobCard({ code, title, location, status, permit, day, dayOf, act
         </div>
         {children}
       </div>
-      <div className="p-4 pt-0">
-        <BigActionButton action={action} onClick={onAction} />
-      </div>
+      {(footer || action) && (
+        <div className="grid gap-2 p-4 pt-0">
+          {footer ?? (action && <BigActionButton action={action} onClick={onAction} />)}
+        </div>
+      )}
     </Card>
   );
 }
