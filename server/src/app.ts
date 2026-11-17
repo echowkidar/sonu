@@ -93,6 +93,17 @@ export async function buildApp(opts: BuildOptions): Promise<FastifyInstance> {
     return payload;
   });
 
+  // Proxies such as Cloudflare Tunnel forward a body-less POST without Content-Length (chunked),
+  // which Fastify would reject as an unknown media type. Accept an empty body of any/no type;
+  // keep rejecting real bodies of unsupported types.
+  app.addContentTypeParser('*', { parseAs: 'buffer' }, (_req, body, done) => {
+    if ((body as Buffer).length === 0) return done(null, undefined);
+    const err = new Error('Unsupported Media Type') as Error & { statusCode: number; code: string };
+    err.statusCode = 415;
+    err.code = 'FST_ERR_CTP_INVALID_MEDIA_TYPE';
+    done(err, undefined);
+  });
+
   await app.register(cookie);
   await app.register(multipart, { limits: { fileSize: config.maxUploadBytes, files: 1, fields: 10 } });
   await app.register(authPlugin);
