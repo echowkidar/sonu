@@ -49,7 +49,12 @@ function DetailsCard({ me }: { me: UserView }) {
   const save = useSave();
   const form = useForm({
     initial: { fullName: me.fullName, mobile: me.mobile ?? '' }, schema: detailsSchema,
-    submit: async (d) => { await save({ fullName: d.fullName, mobile: blankToNull(d.mobile) }); toast.success('Details saved.'); },
+    submit: async (d) => {
+      // Send the mobile only when it changed: the server clears the "verified" mark on every mobile write.
+      const mobile = blankToNull(d.mobile);
+      await save({ fullName: d.fullName, ...(mobile !== (me.mobile ?? null) ? { mobile } : {}) });
+      toast.success('Details saved.');
+    },
   });
   return (
     <Card>
@@ -192,8 +197,9 @@ export default function ProfilePage() {
         <QueryBoundary query={query}>
           {(me) => (
             <>
-              <DetailsCard key={me.updatedAt} me={me} />
-              <PreferencesCard key={`p-${me.updatedAt}`} me={me} />
+              {/* No remount keys: saving one card must not wipe unsaved edits in the other. */}
+              <DetailsCard me={me} />
+              <PreferencesCard me={me} />
               <LooksCard me={me} />
             </>
           )}
