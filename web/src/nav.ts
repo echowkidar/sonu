@@ -75,6 +75,8 @@ export function homeForRole(role: Role): string {
 }
 
 export function canAccess(role: Role, pathname: string): boolean {
+  // "/" only redirects to the role's home page, so every signed-in role may open it.
+  if (pathname === '/') return true;
   const exact = NAV.find((n) => n.to === pathname);
   if (exact) return exact.roles.includes(role);
   const extra = EXTRA_ACCESS.find((e) => pathname.startsWith(e.prefix));

@@ -298,7 +298,7 @@ export default async function workRequestRoutes(app: FastifyInstance): Promise<v
     const timeline = [
       ...events.rows.map((e: Record<string, unknown>) => ({ kind: 'event', at: e.at, type: e.type, source: e.source, payload: e.payload, userName: e.userName, id: e.id })),
       ...stages.rows.map((s: Record<string, unknown>) => ({ kind: 'stage', at: s.at, type: 'stage', source: s.source, payload: { from: s.fromStage, to: s.toStage }, userName: s.userName, id: s.id })),
-      ...assignments.rows.map((a: Record<string, unknown>) => ({ kind: 'assignment', at: a.createdAt, type: 'job.assigned', source: 'sonu', payload: { assignmentId: a.id, assignee: a.assigneeName, plannedDate: a.plannedDate, status: a.status }, userName: a.assignedByName, id: a.id })),
+      // Assignments are already on the timeline as their 'job.assigned' wr_event; listing them again duplicated them.
       ...updates.rows.map((u: Record<string, unknown>) => ({ kind: 'job_update', at: u.at, type: u.statusTo ? `job.${u.statusTo}` : 'job.update', source: 'sonu', payload: { assignmentId: u.assignmentId, note: u.note }, userName: u.userName, id: u.id })),
     ].sort((a, b) => new Date(a.at as string).getTime() - new Date(b.at as string).getTime());
     const attachments = await db.query(
