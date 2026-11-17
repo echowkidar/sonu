@@ -47,8 +47,13 @@ export interface MailSettings {
 export interface MailTestResult { ok: boolean; driver: string; to: string; messageId: string | null }
 
 export interface MessagingSettings {
-  whatsappMode: 'click_to_chat' | 'linked_session'; whatsappNumber: string | null; linkedSessionState: string | null; pushEnabled: boolean;
-  smsProvider: string | null; rateLimitPerMinute: number; quietHoursStart: string | null; quietHoursEnd: string | null; updatedAt: string; linkedSessionWarning: string;
+  whatsappMode: 'click_to_chat' | 'linked_session'; pushEnabled: boolean;
+  quietHoursStart: string | null; quietHoursEnd: string | null; updatedAt: string;
+  rateLimit: {
+    minIntervalSeconds: number; dailyLimit: number;
+    hardCaps: { minIntervalSecondsMin: number; minIntervalSecondsMax: number; dailyLimitMin: number; dailyLimitMax: number };
+  };
+  riskWarning: string; riskAcknowledgedAt: string | null;
 }
 
 export interface MarafiqConnection {

@@ -15,14 +15,19 @@ import { ADMIN } from '@/lib/endpoints';
 import { blankToNull, useForm } from '@/lib/forms';
 import type { MessagingSettings } from '@/lib/types';
 
+/** Server hard caps (server/src/comm/whatsapp WA_HARD_CAPS). */
+const CAPS = { minIntervalSecondsMin: 10, minIntervalSecondsMax: 3600, dailyLimitMin: 1, dailyLimitMax: 500 };
+const intIn = (min: number, max: number) =>
+  z.string().trim().refine((v) => /^\d+$/.test(v) && +v >= min && +v <= max, `A number from ${min} to ${max}.`);
 const time = z.string().refine((v) => v === '' || /^([01]\d|2[0-3]):[0-5]\d$/.test(v), 'Use HH:MM, e.g. 21:00.');
 export const messagingSchema = z.object({
   whatsappMode: z.enum(['click_to_chat', 'linked_session']),
-  whatsappNumber: z.string().trim().refine((v) => v === '' || /^\+\d{8,15}$/.test(v), 'Number with country code, no spaces, e.g. +97455550100.'),
   pushEnabled: z.boolean(),
-  rateLimitPerMinute: z.string().trim().refine((v) => /^\d+$/.test(v) && +v >= 1 && +v <= 120, 'A number from 1 to 120.'),
+  minIntervalSeconds: intIn(CAPS.minIntervalSecondsMin, CAPS.minIntervalSecondsMax),
+  dailyLimit: intIn(CAPS.dailyLimitMin, CAPS.dailyLimitMax),
   quietHoursStart: time,
   quietHoursEnd: time,
+  acknowledgeRisk: z.boolean(),
 });
 type MsgValues = z.input<typeof messagingSchema>;
 
@@ -31,16 +36,20 @@ export function MessagingSettingsCard({ settings, query }: { settings: Messaging
   const qc = useQueryClient();
   const form = useForm<MsgValues, z.output<typeof messagingSchema>>({
     initial: {
-      whatsappMode: settings.whatsappMode ?? 'click_to_chat', whatsappNumber: settings.whatsappNumber ?? '', pushEnabled: settings.pushEnabled ?? true,
-      rateLimitPerMinute: String(settings.rateLimitPerMinute ?? 20), quietHoursStart: settings.quietHoursStart ?? '', quietHoursEnd: settings.quietHoursEnd ?? '',
+      whatsappMode: settings.whatsappMode ?? 'click_to_chat', pushEnabled: settings.pushEnabled ?? true,
+      minIntervalSeconds: String(settings.rateLimit?.minIntervalSeconds ?? 20), dailyLimit: String(settings.rateLimit?.dailyLimit ?? 200),
+      quietHoursStart: settings.quietHoursStart ?? '', quietHoursEnd: settings.quietHoursEnd ?? '', acknowledgeRisk: false,
     },
     schema: messagingSchema,
     submit: async (d) => {
+      const switchingToLinked = d.whatsappMode === 'linked_session' && settings.whatsappMode !== 'linked_session';
       await api(ADMIN.messaging, {
         method: 'PUT', query,
         body: {
-          whatsappMode: d.whatsappMode, whatsappNumber: blankToNull(d.whatsappNumber), pushEnabled: d.pushEnabled,
-          rateLimitPerMinute: Number(d.rateLimitPerMinute), quietHoursStart: blankToNull(d.quietHoursStart), quietHoursEnd: blankToNull(d.quietHoursEnd),
+          whatsappMode: d.whatsappMode, pushEnabled: d.pushEnabled,
+          ...(switchingToLinked ? { acknowledgeRisk: d.acknowledgeRisk } : {}),
+          rateLimit: { minIntervalSeconds: Number(d.minIntervalSeconds), dailyLimit: Number(d.dailyLimit) },
+          quietHoursStart: blankToNull(d.quietHoursStart), quietHoursEnd: blankToNull(d.quietHoursEnd),
         },
       });
       toast.success('Messaging settings saved.');
@@ -48,6 +57,7 @@ export function MessagingSettingsCard({ settings, query }: { settings: Messaging
     },
   });
   const { values: v, set, errors: e } = form;
+  const needsAck = v.whatsappMode === 'linked_session' && settings.whatsappMode !== 'linked_session';
   return (
     <Card>
       <CardHeader><CardTitle>Settings</CardTitle><CardDescription>How SONU reaches people besides e-mail.</CardDescription></CardHeader>
@@ -63,16 +73,19 @@ export function MessagingSettingsCard({ settings, query }: { settings: Messaging
             )}
           </Field>
           {v.whatsappMode === 'linked_session' && (
-            <Alert variant="warning" role="alert"><AlertTriangle className="size-4" aria-hidden /><AlertDescription>{settings.linkedSessionWarning}</AlertDescription></Alert>
+            <Alert variant="warning" role="alert"><AlertTriangle className="size-4" aria-hidden /><AlertDescription>{settings.riskWarning}</AlertDescription></Alert>
           )}
-          <Field label="WhatsApp number (optional)" error={e.whatsappNumber} hint="The number messages are sent from, with country code.">{(p) => <Input {...p} type="tel" value={v.whatsappNumber} onChange={(x) => set('whatsappNumber', x.target.value)} />}</Field>
+          {needsAck && (
+            <CheckRow id="ack-risk" label="I understand the risk and want to use a linked session." checked={v.acknowledgeRisk} onChange={(c) => set('acknowledgeRisk', c)} />
+          )}
           <CheckRow id="push-enabled" label="Push notifications on phones" checked={v.pushEnabled} onChange={(c) => set('pushEnabled', c)} />
-          <div className="grid gap-4 sm:grid-cols-3">
-            <Field label="Messages per minute" error={e.rateLimitPerMinute}>{(p) => <Input {...p} inputMode="numeric" value={v.rateLimitPerMinute} onChange={(x) => set('rateLimitPerMinute', x.target.value)} />}</Field>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Seconds between WhatsApp messages" error={e.minIntervalSeconds} hint={`${CAPS.minIntervalSecondsMin}–${CAPS.minIntervalSecondsMax}. Linked session only.`}>{(p) => <Input {...p} inputMode="numeric" value={v.minIntervalSeconds} onChange={(x) => set('minIntervalSeconds', x.target.value)} />}</Field>
+            <Field label="WhatsApp messages per day" error={e.dailyLimit} hint={`${CAPS.dailyLimitMin}–${CAPS.dailyLimitMax}. Linked session only.`}>{(p) => <Input {...p} inputMode="numeric" value={v.dailyLimit} onChange={(x) => set('dailyLimit', x.target.value)} />}</Field>
             <Field label="Quiet from" error={e.quietHoursStart}>{(p) => <Input {...p} type="time" value={v.quietHoursStart} onChange={(x) => set('quietHoursStart', x.target.value)} />}</Field>
             <Field label="Quiet until" error={e.quietHoursEnd}>{(p) => <Input {...p} type="time" value={v.quietHoursEnd} onChange={(x) => set('quietHoursEnd', x.target.value)} />}</Field>
           </div>
-          <div><Button type="submit" disabled={form.submitting}>{form.submitting ? 'Saving…' : 'Save settings'}</Button></div>
+          <div><Button type="submit" disabled={form.submitting || (needsAck && !v.acknowledgeRisk)}>{form.submitting ? 'Saving…' : 'Save settings'}</Button></div>
         </form>
       </CardContent>
     </Card>
