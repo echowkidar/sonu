@@ -18,6 +18,8 @@ import ruleRoutes from './admin/rules.js';
 import settingsRoutes from './admin/settings.js';
 import bulkRoutes from './bulk/routes.js';
 import { notificationRoutes } from './notifications/index.js';
+import commPlugin from './comm/index.js';
+import connectionPlugin from './connection/index.js';
 import type { TransportFactory } from './mail/types.js';
 import './types.js';
 
@@ -112,6 +114,12 @@ export async function buildApp(opts: BuildOptions): Promise<FastifyInstance> {
   await app.register(settingsRoutes);
   await app.register(bulkRoutes);
   await app.register(notificationRoutes);
+  await app.register(commPlugin);
+  await app.register(connectionPlugin);
+  const ops = await import('./ops/index.js');
+  await app.register(ops.default);
+  // The worker's file hand-over (server/src/connection) uses the same import path as manual upload.
+  if (!app.hasDecorator('importRunner')) app.decorate('importRunner', ops.runImport);
 
   // ───── Web app (built by web/, served from ../web/dist). Starts fine when it does not exist yet. ─────
   const indexHtml = path.join(config.webDist, 'index.html');
