@@ -26,6 +26,7 @@ import { notify } from '../notifications/index.js';
 import type { AuthUser } from '../types.js';
 import { purchasesFor, zeroRfeReport } from './zeroRfe.js';
 import { materialRequestsFor } from './material.js';
+import { lpoListFor, rfeHistoryFor } from './lpo.js';
 import {
   computedFor,
   deadlineFor,
@@ -383,6 +384,8 @@ export default async function workRequestRoutes(app: FastifyInstance): Promise<v
       : undefined;
     const localPurchases = await purchasesFor(db, cid, [w.id], money, scope.user.role !== 'foreman');
     const materialRequests = await materialRequestsFor(db, scope, w.id);
+    const lpos = await lpoListFor(db, scope, w.id, { withHistory: true });
+    const rfeHistory = await rfeHistoryFor(db, cid, w);
     return {
       ...view,
       today: ctx.today,
@@ -396,6 +399,8 @@ export default async function workRequestRoutes(app: FastifyInstance): Promise<v
       moneyTrail,
       localPurchases: localPurchases.get(w.id) ?? [],
       materialRequests,
+      lpos,
+      rfeHistory,
     };
   });
 

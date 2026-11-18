@@ -15,11 +15,12 @@ import type { ProcurementSummary } from '@/lib/types';
 
 /**
  * Procurement dashboard: one tile per MR section, each opening the filtered list.
- * Petty cash claims have their own tiles; the LPO section is still to come.
+ * Petty cash claims and LPO (pending / released) have their own tiles.
  */
 export function ProcurementView({ data }: { data: ProcurementSummary }) {
   const nav = useNavigate();
   const pc = data.pettyCash ?? null;
+  const lpo = data.lpo ?? null;
   const go = (filters: Record<string, string>) => () => nav(mrListUrl(filters));
   return (
     <div className="grid gap-4">
@@ -36,6 +37,15 @@ export function ProcurementView({ data }: { data: ProcurementSummary }) {
       <p className="text-sm text-muted-foreground" data-testid="closed-this-month">
         <Link to={mrListUrl({ status: 'closed' })} className="underline">{data.closedThisMonth} closed this month</Link>
       </p>
+      {lpo && (
+        <>
+          <section aria-label="LPO" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <KpiTile label="LPO Pending" value={lpo.pending} tone={lpo.pending ? 'warning' : 'neutral'} onClick={() => nav('/procurement/lpo?view=pending')} />
+            <KpiTile label="LPO Released" value={lpo.released} tone={lpo.released ? 'success' : 'neutral'} onClick={() => nav('/procurement/lpo')} />
+          </section>
+          <p className="text-sm text-muted-foreground" data-testid="lpo-released-month">{lpo.releasedThisMonth} released this month</p>
+        </>
+      )}
       {pc && (
         <>
           <section aria-label="Petty cash" className="grid grid-cols-2 gap-3 lg:grid-cols-4">

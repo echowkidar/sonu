@@ -16,6 +16,7 @@ import { StatusBadge } from '@/components/StatusBadge';
 import { Timeline } from '@/components/Timeline';
 import { ErrorState, FormError, NativeSelect } from '@/components/admin/kit';
 import { MrStatusBadge } from '@/components/ops/MrStatusBadge';
+import { MrLpoCard } from '@/components/ops/LpoCard';
 import { api, apiDelete, apiGet, apiPatch, apiPost } from '@/lib/api';
 import { OPS } from '@/lib/endpoints';
 import { errorMessage, formatDateTime } from '@/lib/forms';
@@ -345,6 +346,8 @@ export function MrDetailView({ mr, role, userId, people = [] }: { mr: MrDetail; 
           </CardContent>
         </Card>
       ) : null}
+
+      <MrLpoCard lpos={mr.lpos ?? []} />
 
       <Card>
         <CardHeader><CardTitle>Documents</CardTitle></CardHeader>

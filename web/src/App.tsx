@@ -28,6 +28,7 @@ const MyJobDetail = lazyPage(() => import('@/pages/MyJobDetailPage'));
 const TeamJobs = lazyPage(() => import('@/pages/TeamJobsPage'));
 const ZeroRfeReportPage = lazyPage(() => import('@/pages/ZeroRfeReportPage'));
 const Procurement = lazyPage(() => import('@/pages/ProcurementPage'));
+const LpoPage = lazyPage(() => import('@/pages/LpoPage'));
 const MrList = lazyPage(() => import('@/pages/MrListPage'));
 const MrForm = lazyPage(() => import('@/pages/MrFormPage'));
 const MrDetail = lazyPage(() => import('@/pages/MrDetailPage'));
@@ -94,6 +95,7 @@ export default function App() {
                     <Route path="/team-jobs" element={<TeamJobs />} />
                     <Route path="/zero-rfe" element={<ZeroRfeReportPage />} />
                     <Route path="/procurement" element={<Procurement />} />
+                    <Route path="/procurement/lpo" element={<LpoPage />} />
                     <Route path="/procurement/mr" element={<MrList />} />
                     <Route path="/procurement/mr/new" element={<MrForm />} />
                     <Route path="/procurement/mr/:id" element={<MrDetail />} />

@@ -17,6 +17,7 @@ import { AppError, badRequest, conflict, forbidden, notFound } from '../errors.j
 import { notify } from '../notifications/index.js';
 import { computedFor, loadComputeContext, scopeOf, scopeSql, seesMoney, todayFor, type Scope } from './context.js';
 import { imageType, MAX_PHOTO_BYTES } from './jobs.js';
+import { lpoForMr, lpoSummary } from './lpo.js';
 import { pettyCashSummary } from './pettyCash.js';
 import { findWr, sonuEvent } from './workRequests.js';
 
@@ -359,6 +360,7 @@ async function detailView(db: Queryable, scope: Scope, mr: MrRow, access: Access
     })),
     history: history.rows.map((h) => ({ id: h.id, fromStatus: h.from_status, toStatus: h.to_status, note: h.note, at: h.at, userName: h.user_name })),
     documents: docs.rows.map((d) => ({ id: d.id, fileName: d.file_name, mime: d.mime, docKind: d.doc_kind, createdAt: d.created_at, uploadedBy: d.uploaded_by, uploadedByName: d.uploaded_by_name })),
+    lpos: await lpoForMr(db, scope, mr.id),
     can: {
       edit: access.canEdit,
       cancel: access.canCancel,
@@ -379,24 +381,24 @@ interface Upload {
   name: string;
 }
 
-function fileKind(buf: Buffer, allowPdf: boolean): { ext: string; mime: string } | null {
+export function fileKind(buf: Buffer, allowPdf: boolean): { ext: string; mime: string } | null {
   const img = imageType(buf);
   if (img) return img;
   if (allowPdf && buf.length >= 5 && buf.subarray(0, 5).toString('latin1') === '%PDF-') return { ext: 'pdf', mime: 'application/pdf' };
   return null;
 }
 
-async function removeUploads(app: FastifyInstance, files: { rel: string }[]) {
+export async function removeUploads(app: FastifyInstance, files: { rel: string }[]) {
   for (const p of files) await fsp.rm(path.join(app.config.uploadDir, p.rel), { force: true }).catch(() => undefined);
 }
 
-function safeName(original: string | undefined, ext: string, fallback: string): string {
+export function safeName(original: string | undefined, ext: string, fallback: string): string {
   let base = path.basename(String(original ?? '')).replace(/[^A-Za-z0-9._ -]/g, '_').trim().slice(0, 100);
   if (!base || base.startsWith('.')) base = fallback;
   return base.toLowerCase().endsWith(`.${ext}`) || (ext === 'jpg' && /\.jpe?g$/i.test(base)) ? base : `${base}.${ext}`;
 }
 
-async function readUploadForm(app: FastifyInstance, request: FastifyRequest) {
+export async function readUploadForm(app: FastifyInstance, request: FastifyRequest) {
   if (!request.isMultipart()) throw badRequest('Send the files as a form (multipart).');
   const fields: Record<string, string> = {};
   const raw: { buf: Buffer; name: string | undefined }[] = [];
@@ -559,7 +561,7 @@ export default async function materialRoutes(app: FastifyInstance): Promise<void
          FROM material_request m WHERE m.contractor_id = $1 AND ${vis}`,
       params,
     );
-    return { ...r.rows[0], pettyCash: await pettyCashSummary(app.db, scope, tz, today.slice(0, 7)) };
+    return { ...r.rows[0], pettyCash: await pettyCashSummary(app.db, scope, tz, today.slice(0, 7)), lpo: await lpoSummary(app.db, scope, tz, today.slice(0, 7)) };
   });
 
   // ───── detail ─────

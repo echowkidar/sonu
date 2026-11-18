@@ -137,6 +137,8 @@ export interface WrDetail extends WrView {
   moneyTrail?: Record<string, string | number | null> | null;
   localPurchases?: LocalPurchase[];
   materialRequests?: WrMaterialRequest[];
+  lpos?: Lpo[];
+  rfeHistory?: RfeHistoryItem[];
 }
 
 export interface Person { id: string; fullName: string; role: string; workTeams: string[] }
@@ -239,6 +241,7 @@ export interface MrDetail {
   vendorName: string | null; vendorContact: string | null; quotationRef: string | null; quotedAmount: number | null; expectedDelivery: string | null; procurementRemarks: string | null;
   createdAt: string; updatedAt: string; closedAt: string | null;
   lines: MrLine[]; history: MrHistory[]; documents: MrDocument[];
+  lpos?: Lpo[];
   can: { edit: boolean; cancel: boolean; procure: boolean; upload: boolean; nextStatuses: MrStatus[] };
 }
 export interface MrListItem {
@@ -246,11 +249,22 @@ export interface MrListItem {
   purpose: 'stock' | 'new'; lines: number; firstDescription: string | null; facility: string | null; buildingName: string | null; requestedByName: string | null;
   assignedToName: string | null; vendorName: string | null; quotedAmount: number | null; expectedDelivery: string | null; overdue: boolean; updatedAt: string;
 }
+export interface LpoDocument { id: string; fileName: string; mime: string; createdAt: string; uploadedByName: string | null }
+export interface LpoHistoryItem { id: string; action: 'created' | 'updated' | 'cancelled' | 'document_added' | 'document_removed'; changes: Record<string, unknown>; at: string; userName: string | null }
+export interface Lpo {
+  id: string; wrCode: string; materialRequestId: string | null; mrCode: string | null; lpoNo: string; issueDate: string; vendorName: string; vendorContact: string | null;
+  approvedAmount: number | null; rfeAmountSnapshot: number | null; rfeApprovedOn: string | null; remarks: string | null; status: 'released' | 'cancelled'; cancelledReason: string | null;
+  createdByName: string | null; createdAt: string; updatedAt: string; documents: LpoDocument[]; can: { edit: boolean }; history?: LpoHistoryItem[]; warning?: string | null;
+}
+export interface RfeHistoryItem { at: string; kind: string; text: string; source: 'marafiq' | 'sonu'; by: string | null }
+export interface LpoPendingItem { wrCode: string; buildingName: string | null; description: string | null; wrStatus: string | null; rfeAmount: number | null; approvedOn: string; daysSinceApproval: number }
 export interface PettyCashSummary { draft: number; pendingReview: number; pendingApproval: number; approved: number; rejected: number; approvedAmountThisMonth: number }
 export interface ProcurementSummary {
   new: number; pending: number; enquiry: number; quoted: number; ordered: number; delivered: number; closedThisMonth: number; rejected: number; overdue: number;
   /** null / missing: the role has no access to claims (or an older server). */
   pettyCash?: PettyCashSummary | null;
+  /** null / missing: no access to LPOs (or an older server). */
+  lpo?: { pending: number; releasedThisMonth: number; released: number } | null;
 }
 
 export type PettyCashStatus = 'draft' | 'submitted' | 'returned' | 'reviewed' | 'approved' | 'rejected';

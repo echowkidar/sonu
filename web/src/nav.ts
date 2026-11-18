@@ -58,6 +58,8 @@ export const NAV: readonly NavItem[] = [
 const EXTRA_ACCESS: { prefix: string; roles: readonly Role[] }[] = [
   // Procurement list, request form and request pages; the server decides which requests each person sees.
   { prefix: '/procurement/mr', roles: ['contractor_admin', 'manager', 'coordinator', 'purchasing', 'supervisor', 'foreman'] },
+  // LPO pending / released lists (procurement dashboard); the server limits what each person sees.
+  { prefix: '/procurement/lpo', roles: ['contractor_admin', 'manager', 'coordinator', 'purchasing'] },
   // Petty cash claim form and claim pages; the server decides which claims each person sees.
   { prefix: '/petty-cash/', roles: ['supervisor', 'coordinator', 'manager', 'contractor_admin', 'purchasing'] },
   { prefix: '/work-requests/', roles: ['contractor_admin', 'manager', 'coordinator', 'purchasing', 'supervisor', 'foreman'] },
