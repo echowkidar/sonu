@@ -4,7 +4,7 @@
  */
 import {
   LayoutDashboard, ClipboardList, Wrench, Users, FileUp, Bell, UserCircle, Building2, UserCog, Network,
-  FileSpreadsheet, Receipt, Mail, MessageSquare, PlugZap, SlidersHorizontal, ListChecks, ScrollText, Briefcase,
+  FileSpreadsheet, Receipt, ShoppingCart, PackageSearch, Mail, MessageSquare, PlugZap, SlidersHorizontal, ListChecks, ScrollText, Briefcase,
   type LucideIcon,
 } from 'lucide-react';
 import type { Role } from './lib/roles';
@@ -17,6 +17,8 @@ export interface NavItem {
   roles: readonly Role[];
   /** Priority on the phone tab bar (lower first). Items without it go under "More". */
   tab?: number;
+  /** Tab priority for single roles that differ from `tab` (Procurement is a phone tab for purchasing only). */
+  tabFor?: Partial<Record<Role, number>>;
   group: 'main' | 'admin';
 }
 
@@ -28,6 +30,9 @@ export const NAV: readonly NavItem[] = [
   { id: 'my-jobs', label: 'My jobs', to: '/my-jobs', icon: Wrench, roles: ['technician', 'foreman'], tab: 1, group: 'main' },
   { id: 'team-jobs', label: 'Team jobs', to: '/team-jobs', icon: Users, roles: ['foreman', 'supervisor'], tab: 2, group: 'main' },
   // Foreman can own work requests (server OWNER_ROLES), so he needs the list and detail too.
+  { id: 'procurement', label: 'Procurement', to: '/procurement', icon: ShoppingCart, roles: ['purchasing', 'coordinator', 'manager', 'contractor_admin'], tabFor: { purchasing: 1 }, group: 'main' },
+  // Field staff see their own requests and those of their zone; the list opens with the "Mine" filter.
+  { id: 'my-mrs', label: 'My MRs', to: '/procurement/mr?mine=1', icon: PackageSearch, roles: ['supervisor', 'foreman'], group: 'main' },
   { id: 'work-requests', label: 'Work requests', to: '/work-requests', icon: ClipboardList, roles: ['contractor_admin', 'manager', 'coordinator', 'purchasing', 'supervisor', 'foreman'], tab: 3, group: 'main' },
   { id: 'imports', label: 'Imports', to: '/imports', icon: FileUp, roles: ['contractor_admin', 'coordinator', 'manager'], tab: 3, group: 'main' },
   // Low priority (no tab): it sits under "More" on the phone so the tab bar keeps its four main places.
@@ -49,6 +54,8 @@ export const NAV: readonly NavItem[] = [
 
 /** Routes that are not menu items but still need a role rule (detail pages). */
 const EXTRA_ACCESS: { prefix: string; roles: readonly Role[] }[] = [
+  // Procurement list, request form and request pages; the server decides which requests each person sees.
+  { prefix: '/procurement/mr', roles: ['contractor_admin', 'manager', 'coordinator', 'purchasing', 'supervisor', 'foreman'] },
   { prefix: '/work-requests/', roles: ['contractor_admin', 'manager', 'coordinator', 'purchasing', 'supervisor', 'foreman'] },
   // Same roles the server lets view a job (ops/jobs.ts jobAccess); the server still checks each job.
   { prefix: '/my-jobs/', roles: ['technician', 'foreman', 'supervisor', 'coordinator', 'manager', 'contractor_admin'] },
@@ -61,7 +68,8 @@ export function navForRole(role: Role): NavItem[] {
 /** Phone bottom bar: first four by priority; the rest are reachable under "More". */
 export function tabsForRole(role: Role, max = 4): { tabs: NavItem[]; more: NavItem[] } {
   const items = navForRole(role);
-  const ranked = items.filter((i) => i.tab !== undefined).sort((a, b) => (a.tab! - b.tab!));
+  const prio = (i: NavItem) => i.tabFor?.[role] ?? i.tab;
+  const ranked = items.filter((i) => prio(i) !== undefined).sort((a, b) => (prio(a)! - prio(b)!));
   const tabs = ranked.slice(0, max);
   const more = items.filter((i) => !tabs.includes(i));
   return { tabs, more };
@@ -73,7 +81,7 @@ export function homeForRole(role: Role): string {
     case 'technician': return '/my-jobs';
     case 'foreman': return '/team-jobs';
     case 'supervisor': return '/my-work';
-    case 'purchasing': return '/work-requests';
+    case 'purchasing': return '/procurement';
     default: return '/dashboard';
   }
 }

@@ -27,6 +27,10 @@ const MyJobs = lazyPage(() => import('@/pages/MyJobsPage'));
 const MyJobDetail = lazyPage(() => import('@/pages/MyJobDetailPage'));
 const TeamJobs = lazyPage(() => import('@/pages/TeamJobsPage'));
 const ZeroRfeReportPage = lazyPage(() => import('@/pages/ZeroRfeReportPage'));
+const Procurement = lazyPage(() => import('@/pages/ProcurementPage'));
+const MrList = lazyPage(() => import('@/pages/MrListPage'));
+const MrForm = lazyPage(() => import('@/pages/MrFormPage'));
+const MrDetail = lazyPage(() => import('@/pages/MrDetailPage'));
 const Imports = lazyPage(() => import('@/pages/ImportsPage'));
 const Notifications = lazyPage(() => import('@/pages/NotificationsPage'));
 const Profile = lazyPage(() => import('@/pages/ProfilePage'));
@@ -86,6 +90,11 @@ export default function App() {
                     <Route path="/my-jobs/:id" element={<MyJobDetail />} />
                     <Route path="/team-jobs" element={<TeamJobs />} />
                     <Route path="/zero-rfe" element={<ZeroRfeReportPage />} />
+                    <Route path="/procurement" element={<Procurement />} />
+                    <Route path="/procurement/mr" element={<MrList />} />
+                    <Route path="/procurement/mr/new" element={<MrForm />} />
+                    <Route path="/procurement/mr/:id" element={<MrDetail />} />
+                    <Route path="/procurement/mr/:id/edit" element={<MrForm />} />
                     <Route path="/imports" element={<Imports />} />
                     <Route path="/notifications" element={<Notifications />} />
                     <Route path="/profile" element={<Profile />} />

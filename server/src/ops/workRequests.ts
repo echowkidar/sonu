@@ -25,6 +25,7 @@ import { AppError, badRequest, forbidden, notFound } from '../errors.js';
 import { notify } from '../notifications/index.js';
 import type { AuthUser } from '../types.js';
 import { purchasesFor, zeroRfeReport } from './zeroRfe.js';
+import { materialRequestsFor } from './material.js';
 import {
   computedFor,
   deadlineFor,
@@ -381,6 +382,7 @@ export default async function workRequestRoutes(app: FastifyInstance): Promise<v
         )).rows[0] ?? null
       : undefined;
     const localPurchases = await purchasesFor(db, cid, [w.id], money);
+    const materialRequests = await materialRequestsFor(db, scope, w.id);
     return {
       ...view,
       today: ctx.today,
@@ -393,6 +395,7 @@ export default async function workRequestRoutes(app: FastifyInstance): Promise<v
       permit,
       moneyTrail,
       localPurchases: localPurchases.get(w.id) ?? [],
+      materialRequests,
     };
   });
 

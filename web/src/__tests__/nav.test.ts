@@ -77,3 +77,29 @@ describe('0 RFE report nav', () => {
     expect(canAccess('platform_admin', '/zero-rfe')).toBe(false);
   });
 });
+
+describe('procurement nav', () => {
+  it('Procurement is purchasing home and a phone tab; coordinator level roles have it under More', () => {
+    expect(homeForRole('purchasing')).toBe('/procurement');
+    expect(tabsForRole('purchasing').tabs.map((t) => t.to)[0]).toBe('/procurement');
+    for (const r of ['coordinator', 'manager', 'contractor_admin'] as const) {
+      expect(canAccess(r, '/procurement'), r).toBe(true);
+      expect(tabsForRole(r).tabs.map((t) => t.to), r).not.toContain('/procurement');
+      expect(tabsForRole(r).more.map((t) => t.to), r).toContain('/procurement');
+    }
+    for (const r of ['supervisor', 'foreman', 'technician', 'platform_admin'] as const) expect(canAccess(r, '/procurement'), r).toBe(false);
+  });
+
+  it('supervisor and foreman get My MRs under More; the MR pages open for the roles the server lets in', () => {
+    for (const r of ['supervisor', 'foreman'] as const) {
+      expect(navForRole(r).map((n) => n.label), r).toContain('My MRs');
+      expect(tabsForRole(r).tabs.map((t) => t.label), r).not.toContain('My MRs');
+      expect(tabsForRole(r).more.map((t) => t.label), r).toContain('My MRs');
+    }
+    for (const r of ['supervisor', 'foreman', 'purchasing', 'coordinator', 'manager', 'contractor_admin'] as const) {
+      for (const p of ['/procurement/mr', '/procurement/mr/new', '/procurement/mr/abc', '/procurement/mr/abc/edit']) expect(canAccess(r, p), `${r} ${p}`).toBe(true);
+    }
+    for (const r of ['technician', 'platform_admin'] as const) expect(canAccess(r, '/procurement/mr/abc'), r).toBe(false);
+    expect(navForRole('purchasing').map((n) => n.label)).not.toContain('My MRs');
+  });
+});

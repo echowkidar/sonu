@@ -15,6 +15,7 @@ import importRoutes from './importRoutes.js';
 import workRequestRoutes from './workRequests.js';
 import jobRoutes from './jobs.js';
 import zeroRfeRoutes from './zeroRfe.js';
+import materialRoutes from './material.js';
 import { runDeadlineSweep } from './deadlines.js';
 
 export { runImport, type RunImportInput, type RunImportResult } from './imports.js';
@@ -29,6 +30,7 @@ async function opsPlugin(app: FastifyInstance): Promise<void> {
   await app.register(workRequestRoutes);
   await app.register(jobRoutes);
   await app.register(zeroRfeRoutes);
+  await app.register(materialRoutes);
 
   // Deadline sweep every 15 minutes; not in tests (they call runDeadlineSweep directly) and never started twice.
   if (app.config.nodeEnv !== 'test' && process.env.SONU_DEADLINE_SWEEP !== 'off') {

@@ -15,6 +15,7 @@ import { ErrorState } from '@/components/admin/kit';
 import { SonuPanel } from '@/components/ops/SonuPanel';
 import { AssignSheet } from '@/components/ops/AssignSheet';
 import { LocalPurchasesCard } from '@/components/ops/ZeroRfe';
+import { MaterialRequestsCard } from '@/components/ops/MrCard';
 import { RfeEditor } from '@/components/ops/RfeEditor';
 import { apiGet } from '@/lib/api';
 import { OPS } from '@/lib/endpoints';
@@ -127,6 +128,8 @@ export function WrDetailView({ wr }: { wr: WrDetail }) {
           </Card>
 
           {user && <LocalPurchasesCard wr={wr} role={role} userId={user.id} />}
+
+          <MaterialRequestsCard wr={wr} role={role} />
 
           {wr.assignments.length > 0 && (
             <Card>

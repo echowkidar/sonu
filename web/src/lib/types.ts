@@ -133,6 +133,7 @@ export interface WrDetail extends WrView {
   permit: { ptwCode: string; status: string | null; dateStart: string | null; dateUpto: string | null; dateIssued: string | null; applicant: string | null; controller: string | null; authority: string | null } | null;
   moneyTrail?: Record<string, string | number | null> | null;
   localPurchases?: LocalPurchase[];
+  materialRequests?: WrMaterialRequest[];
 }
 
 export interface Person { id: string; fullName: string; role: string; workTeams: string[] }
@@ -213,4 +214,35 @@ export interface BulkJob {
 export interface BulkHistoryItem {
   id: string; kind: BulkKind; fileName: string; status: string; added: number; updated: number; rejected: number; skippedExamples: number;
   createdAt: string; confirmedAt: string | null;
+}
+
+// ───────────────────────────── material requests / procurement ─────────────────────────────
+
+export type MrStatus = 'submitted' | 'accepted' | 'enquiry' | 'quoted' | 'ordered' | 'delivered' | 'closed' | 'rejected' | 'cancelled';
+export type MrDocKind = 'quote' | 'warranty' | 'client_approval' | 'calibration_certificate' | 'other';
+export interface WrMaterialRequest { id: string; mrNo: number; mrCode: string; status: MrStatus; dateRequested: string; lines: number; requestedByName: string | null }
+export interface MrFile { id: string; fileName: string; mime: string; uploadedBy?: string | null }
+export interface MrLine {
+  id: string; lineNo: number; wrCode: string | null; storeSlNo: string | null; clientMatRef: string | null; description: string; quantity: number; uom: string | null;
+  brand: string | null; kind: 'material' | 'service'; vendorOrigin: 'local' | 'foreign' | null; claimable: boolean | null; targetDate: string | null; remarks: string | null; photos: MrFile[];
+}
+export interface MrHistory { id: string; fromStatus: MrStatus | null; toStatus: MrStatus; note: string | null; at: string; userName: string | null }
+export interface MrDocument extends MrFile { docKind: MrDocKind | null; createdAt: string; uploadedByName: string | null }
+export interface MrDetail {
+  id: string; mrNo: number; mrCode: string; status: MrStatus; statusLabel: string; wrCode: string | null; dateRequested: string;
+  projectName: string | null; contractNo: string | null; itemDiscipline: string | null; facility: string | null; zone: string | null; buildingName: string | null;
+  purchaseType: 'materials' | 'services'; purpose: 'stock' | 'new'; additionalRequirements: string | null; docsRequired: MrDocKind[];
+  requestedBy: string | null; requestedByName: string | null; assignedTo: string | null; assignedToName: string | null;
+  vendorName: string | null; vendorContact: string | null; quotationRef: string | null; quotedAmount: number | null; expectedDelivery: string | null; procurementRemarks: string | null;
+  createdAt: string; updatedAt: string; closedAt: string | null;
+  lines: MrLine[]; history: MrHistory[]; documents: MrDocument[];
+  can: { edit: boolean; cancel: boolean; procure: boolean; upload: boolean; nextStatuses: MrStatus[] };
+}
+export interface MrListItem {
+  id: string; mrNo: number; mrCode: string; status: MrStatus; statusLabel: string; wrCode: string | null; dateRequested: string; purchaseType: 'materials' | 'services';
+  purpose: 'stock' | 'new'; lines: number; firstDescription: string | null; facility: string | null; buildingName: string | null; requestedByName: string | null;
+  assignedToName: string | null; vendorName: string | null; quotedAmount: number | null; expectedDelivery: string | null; overdue: boolean; updatedAt: string;
+}
+export interface ProcurementSummary {
+  new: number; pending: number; enquiry: number; quoted: number; ordered: number; delivered: number; closedThisMonth: number; rejected: number; overdue: number;
 }

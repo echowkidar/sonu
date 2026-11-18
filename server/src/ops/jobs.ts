@@ -12,6 +12,7 @@ import { withTx, type Queryable } from '../db.js';
 import { AppError, badRequest, conflict, forbidden, notFound } from '../errors.js';
 import { notify } from '../notifications/index.js';
 import { inTeams, scopeOf, todayFor, type Scope } from './context.js';
+import { canViewMrFile } from './material.js';
 import { loadWrs } from './workRequests.js';
 
 const ALL_SEEING = ['coordinator', 'manager', 'contractor_admin'];
@@ -378,7 +379,10 @@ export default async function jobRoutes(app: FastifyInstance): Promise<void> {
         }
       }
     }
-    if (!allowed && att.work_request_id && !scope.assignedOnly) {
+    // Material request files are decided by the MR rules only (they may have no work request at all).
+    const isMrFile = att.owner_type === 'mr_line' || att.owner_type === 'mr_doc';
+    if (isMrFile) allowed = await canViewMrFile(app.db, scope, att.owner_type, att.owner_id);
+    if (!allowed && !isMrFile && att.work_request_id && !scope.assignedOnly) {
       const ok = await app.db.query(`SELECT w.wr_code FROM work_request w WHERE w.id = $1 AND w.contractor_id = $2`, [att.work_request_id, scope.contractorId]);
       const code = (ok.rows[0] as { wr_code: string } | undefined)?.wr_code;
       if (code) allowed = (await loadWrs(app.db, scope, { code, includeGone: true })).length > 0;
