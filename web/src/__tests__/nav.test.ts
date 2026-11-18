@@ -43,6 +43,14 @@ describe('nav config', () => {
     }
   });
 
+  it('a shared job link opens for every role the server lets view a job', () => {
+    for (const r of ['technician', 'foreman', 'supervisor', 'coordinator', 'manager', 'contractor_admin'] as const) {
+      expect(canAccess(r, '/my-jobs/abc'), r).toBe(true);
+    }
+    expect(canAccess('purchasing', '/my-jobs/abc')).toBe(false);
+    expect(canAccess('platform_admin', '/my-jobs/abc')).toBe(false);
+  });
+
   it('every role can open its profile except none are locked out', () => {
     for (const r of ROLES) expect(canAccess(r, '/profile')).toBe(true);
   });

@@ -47,7 +47,8 @@ export const NAV: readonly NavItem[] = [
 /** Routes that are not menu items but still need a role rule (detail pages). */
 const EXTRA_ACCESS: { prefix: string; roles: readonly Role[] }[] = [
   { prefix: '/work-requests/', roles: ['contractor_admin', 'manager', 'coordinator', 'purchasing', 'supervisor'] },
-  { prefix: '/my-jobs/', roles: ['technician', 'foreman', 'supervisor'] },
+  // Same roles the server lets view a job (ops/jobs.ts jobAccess); the server still checks each job.
+  { prefix: '/my-jobs/', roles: ['technician', 'foreman', 'supervisor', 'coordinator', 'manager', 'contractor_admin'] },
 ];
 
 export function navForRole(role: Role): NavItem[] {
