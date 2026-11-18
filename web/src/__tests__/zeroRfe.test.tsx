@@ -109,8 +109,8 @@ describe('0 RFE', () => {
       month: '2026-11',
       totals: { jobs: 2, expected: 90, spent: 60.5, withoutReceipt: 1 },
       items: [
-        { wrCode: '1234567', buildingName: 'Tower A', description: 'Leaking tap', zone: 'Z1', discipline: 'Plumbing', convertedAt: '2026-11-09T08:00:00Z', convertedByName: 'Sam', expected: 45, spent: 60.5, purchases: 2, receipts: 2, wrStatus: 'Assigned', qfStageLabel: '6. Issue & progress' },
-        { wrCode: '7654321', buildingName: 'Tower B', description: 'Door lock', zone: 'Z2', discipline: 'Civil', convertedAt: '2026-11-10T08:00:00Z', convertedByName: 'Sam', expected: 45, spent: 0, purchases: 0, receipts: 0, wrStatus: 'Assigned', qfStageLabel: '6. Issue & progress' },
+        { wrCode: '1234567', buildingName: 'Tower A', description: 'Leaking tap', zone: 'Z1', discipline: 'Plumbing', convertedAt: '2026-11-09T08:00:00Z', convertedByName: 'Sam', expected: 45, spent: 60.5, purchases: 2, receipts: 2, wrStatus: 'Assigned', qfStageLabel: '6. In Progress' },
+        { wrCode: '7654321', buildingName: 'Tower B', description: 'Door lock', zone: 'Z2', discipline: 'Civil', convertedAt: '2026-11-10T08:00:00Z', convertedByName: 'Sam', expected: 45, spent: 0, purchases: 0, receipts: 0, wrStatus: 'Assigned', qfStageLabel: '6. In Progress' },
       ],
     };
     wrap(<ZeroRfeReportView data={data} />);
@@ -126,7 +126,7 @@ describe('0 RFE', () => {
     const data = {
       today: '2026-11-09', totalOutstanding: 3, breached: 0, backlogKpi: 0, averageAge: 1,
       byDiscipline: empty, byZone: empty, byFacility: empty, byYear: {}, ageBuckets: {}, kpiSplit: {}, tdSplit: {}, rfeTimeFrameSplit: {},
-      descriptiveStages: [{ stage: 6, label: '6. Issue & progress', count: 1 }],
+      descriptiveStages: [{ stage: 6, label: '6. In Progress', count: 1 }],
       needsActionToday: { deadlinesToday: [], deadlinesTodayCount: 0, breachedDeadlines: 0, unowned: [], unownedCount: 0, returns: [], returnsCount: 0, unansweredComments: 0 },
       dataAsOf: null, zeroRfe: { monthJobs: 2, monthSpent: 30.5, withoutReceipt: 1 },
     } as unknown as DashboardData;

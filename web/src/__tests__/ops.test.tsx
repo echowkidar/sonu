@@ -43,7 +43,11 @@ const matrix = (rows: string[], columns: string[], cells: Record<string, Record<
 };
 
 const dash: DashboardData = {
-  today: '2026-11-17', totalOutstanding: 10, breached: 3, backlogKpi: 4, averageAge: 41.8,
+  today: '2026-11-17', totalOutstanding: 10, breached: 3, backlogKpi: 4, averageAge: 41.8, inProgress: 5, priorityRequests: 2,
+  filterOptions: {
+    facilities: ['Hall', 'Tower'], zones: ['North'], disciplines: ['HVAC'],
+    buildings: [{ facility: 'Hall', building: 'Hall Main' }, { facility: 'Tower', building: 'Tower A' }, { facility: 'Tower', building: 'Tower B' }],
+  },
   byDiscipline: matrix(['Awaiting Approval - QF', '(No status)'], ['HVAC', 'Electrical'], { 'Awaiting Approval - QF': { HVAC: 3, Electrical: 2 }, '(No status)': { HVAC: 1, Electrical: 4 } }),
   byZone: matrix(['Completed'], ['North'], { Completed: { North: 2 } }),
   byFacility: matrix(['Completed'], ['Hall'], { Completed: { Hall: 1 } }),
@@ -71,6 +75,31 @@ describe('Dashboard', () => {
     // no QF stage tiles when descriptiveStages is null
     expect(screen.queryByLabelText('QF stages')).toBeNull();
     expect(screen.getByRole('button', { name: /Export Master workbook/ })).toBeInTheDocument();
+  });
+
+  it('shows the five KPI cards, no Average age or Not owned, and links carry the filters', async () => {
+    mockFetch(() => dash);
+    wrap(<DashboardPage />, '/?zone=North');
+    const kpis = within(await screen.findByLabelText('Key figures'));
+    for (const l of ['Total Outstanding', 'Breached Target Date', 'Backlog KPI', 'In Progress', 'Priority Requests']) expect(kpis.getByText(l)).toBeInTheDocument();
+    expect(kpis.getAllByTestId('kpi-value')).toHaveLength(5);
+    expect(screen.queryByText(/Average age/)).toBeNull();
+    expect(screen.queryByText('Not owned')).toBeNull();
+    expect(calls.some((c) => c.url.includes('/api/dashboard') && c.url.includes('zone=North'))).toBe(true);
+    const table = await screen.findByRole('table', { name: 'Status by discipline' });
+    expect(within(table).getByRole('link', { name: 'Awaiting Approval - QF, HVAC' }).getAttribute('href')).toContain('zone=North');
+  });
+
+  it('the Building options follow the chosen Facility', async () => {
+    mockFetch(() => dash);
+    wrap(<DashboardPage />);
+    const building = await screen.findByLabelText('Building');
+    const names = () => within(building).getAllByRole('option').map((o) => o.textContent);
+    expect(names()).toEqual(['All', 'Hall Main', 'Tower A', 'Tower B']);
+    await userEvent.selectOptions(screen.getByLabelText('Facility'), 'Tower');
+    expect(names()).toEqual(['All', 'Tower A', 'Tower B']);
+    expect(screen.getByRole('button', { name: 'Apply' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Reset' })).toBeInTheDocument();
   });
 
   it('shows an error with a retry button when the API fails', async () => {

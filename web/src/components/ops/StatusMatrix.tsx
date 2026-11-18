@@ -12,7 +12,7 @@ import type { Matrix } from '@/lib/types';
  * Every count opens /work-requests with the matching filter in the URL.
  * `dimension` is the filter key of the columns (discipline, zone, facility).
  */
-export function StatusMatrix({ title, matrix, dimension, defaultView = 'table' }: { title: string; matrix: Matrix; dimension: 'discipline' | 'zone' | 'facility'; defaultView?: 'table' | 'chart' }) {
+export function StatusMatrix({ title, matrix, dimension, defaultView = 'table', filters = {} }: { filters?: Record<string, string | undefined>; title: string; matrix: Matrix; dimension: 'discipline' | 'zone' | 'facility'; defaultView?: 'table' | 'chart' }) {
   const [view, setView] = React.useState<'table' | 'chart'>(defaultView);
   const rows = matrix.rows.filter((r) => (matrix.rowTotals[r] ?? 0) > 0);
   const cols = matrix.columns;
@@ -23,7 +23,7 @@ export function StatusMatrix({ title, matrix, dimension, defaultView = 'table' }
   );
   const series = cols.map((c) => ({ key: c, label: c }));
 
-  const link = (status: string | null, col: string | null) => wrListUrl({ contractorStatus: status ? statusFilterValue(status) : undefined, [dimension]: col ?? undefined });
+  const link = (status: string | null, col: string | null) => wrListUrl({ ...filters, contractorStatus: status ? statusFilterValue(status) : undefined, ...(col ? { [dimension]: col } : {}) });
   const cell = 'whitespace-nowrap border-b px-3 py-2 text-end tabular-nums';
   const num = (n: number, to: string, label: string) =>
     n > 0 ? <Link to={to} aria-label={label} className="rounded px-1 font-medium text-primary hover:underline">{n.toLocaleString()}</Link> : <span className="text-muted-foreground">0</span>;
@@ -65,7 +65,7 @@ export function StatusMatrix({ title, matrix, dimension, defaultView = 'table' }
                 <tr>
                   <th scope="row" className="sticky start-0 bg-muted px-3 py-2 text-start">Total</th>
                   {cols.map((c) => <td key={c} className={cell} data-testid={`col-total-${c}`}>{num(matrix.columnTotals[c] ?? 0, link(null, c), `All statuses, ${c}`)}</td>)}
-                  <td className={cell} data-testid="grand-total">{num(matrix.total, wrListUrl({}), 'All work requests')}</td>
+                  <td className={cell} data-testid="grand-total">{num(matrix.total, wrListUrl({ ...filters }), 'All work requests')}</td>
                 </tr>
               </tfoot>
             </table>

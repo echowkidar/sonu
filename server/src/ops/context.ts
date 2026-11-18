@@ -332,7 +332,7 @@ export function stageNo(desc: string | null | undefined): number | null {
 }
 
 /**
- * Stage used for the dashboard tiles and the stage filter: a WR converted to 0 RFE counts under 6 (Issue & progress)
+ * Stage used for the dashboard tiles and the stage filter: a WR converted to 0 RFE counts under 6 (In Progress)
  * while Marafiq still shows it at stage 2-5 (or has no stage yet). Later Marafiq stages (6, 7, 8) are kept.
  */
 export function effectiveStage(w: Pick<WrRow, 'descriptive_status' | 'zero_rfe_at'>): number | null {

@@ -21,7 +21,7 @@ import { useSession } from '@/lib/session';
 import { cn } from '@/lib/utils';
 import type { Meta, WrList, WrView } from '@/lib/types';
 
-const FILTER_KEYS = ['zone', 'discipline', 'facility', 'contractorStatus', 'owner', 'criterion', 'tdStatus', 'kpi', 'ageBucket', 'rfeTimeFrame', 'workTeam', 'qfStage', 'breach', 'wrStatus', 'unowned', 'mine'] as const;
+const FILTER_KEYS = ['zone', 'discipline', 'facility', 'contractorStatus', 'owner', 'criterion', 'tdStatus', 'kpi', 'ageBucket', 'rfeTimeFrame', 'workTeam', 'qfStage', 'breach', 'wrStatus', 'unowned', 'mine', 'building', 'inProgress', 'tdWithin'] as const;
 type FilterKey = (typeof FILTER_KEYS)[number];
 
 interface FilterDef { key: FilterKey; label: string; options: (m: Meta) => { value: string; label: string }[] }
@@ -30,6 +30,9 @@ const FILTERS: FilterDef[] = [
   { key: 'zone', label: 'Zone', options: (m) => strings(m.lookups.zones) },
   { key: 'discipline', label: 'Discipline', options: (m) => strings(m.lookups.disciplines) },
   { key: 'facility', label: 'Facility', options: (m) => strings(m.lookups.facilities) },
+  { key: 'building', label: 'Building', options: () => [] },
+  { key: 'inProgress', label: 'In progress', options: () => [{ value: '1', label: 'In progress only' }] },
+  { key: 'tdWithin', label: 'Target date within', options: () => [{ value: '10', label: 'Next 10 days (priority)' }] },
   { key: 'contractorStatus', label: 'Contractor status', options: (m) => [...m.contractorStatuses.map((s) => ({ value: s.name, label: s.name })), { value: '(none)', label: '(No status)' }] },
   { key: 'owner', label: 'Owner', options: (m) => [{ value: 'none', label: 'Unowned' }, ...m.people.filter((p) => OWNER_ROLES.includes(p.role)).map((p) => ({ value: p.id, label: p.fullName }))] },
   { key: 'criterion', label: 'Criterion', options: (m) => [...m.criteria.map((c) => ({ value: String(c.value), label: c.label })), { value: 'none', label: 'Not classified' }] },

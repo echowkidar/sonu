@@ -58,7 +58,7 @@ const STAGE_LABELS: Record<number, string> = {
   3: '3. QF : Awaiting Estimation Approval',
   4: '4. SP : Awaiting Estimation Re-Submission',
   5: '5. SP : Estimation Approved & AMC & WIP',
-  6: '6. Issue & progress',
+  6: '6. In Progress',
   7: '7. SP: WR Closeout Returned',
   8: '8. QF : Contractor Completed',
 };
@@ -142,8 +142,42 @@ export function wrView(w: WrRow, ctx: ComputeContext, user: AuthUser): WrView {
 }
 
 const csv = (v: string | undefined) => (v ? v.split(',').map((x) => x.trim()).filter(Boolean) : null);
+const normStatus = (s: unknown) => String(s ?? '').replace(/\s+/g, ' ').trim().toLowerCase();
+
+/** In Progress: open WR whose Marafiq status is "Issued and In Process", or that was converted to 0 RFE. */
+export function isInProgress(v: WrView): boolean {
+  // Contractor's rule: a WR stays "Assigned to Work Order" until its estimate is settled. It is in progress only when
+  // it was closed at 0 (0 RFE in SONU, or issued without cost in Marafiq) or QF approved the RFE / budget.
+  if (isCompleted(v.wrStatus)) return false;
+  if ((v.internal as { zeroRfe: unknown }).zeroRfe) return true;
+  return v.computed.rfeStatus === 'RFE Approved' || v.computed.rfeStatus === 'RFE Not Required';
+}
+
+/** Priority request: open WR whose target date is today up to today + `days` days (inclusive). Breached / no target date: no. */
+export function isPriorityRequest(v: WrView, days = 10): boolean {
+  if (isCompleted(v.wrStatus)) return false;
+  const d = v.computed.daysToBreach;
+  return typeof d === 'number' && d <= 0 && d >= -days;
+}
+
+export interface LocationFilter { facility?: string; building?: string; zone?: string; discipline?: string }
+const eqCi = (a: unknown, b: string) => String(a ?? '').trim().toLowerCase() === b.trim().toLowerCase();
+
+/** Dashboard location filter (case-insensitive exact match on the computed values; building on the building name). */
+export function locationMatcher(ctx: ComputeContext, f: LocationFilter): (w: WrRow) => boolean {
+  return (w) => {
+    if (!f.facility && !f.building && !f.zone && !f.discipline) return true;
+    const c = computedFor(w, ctx);
+    return (!f.facility || eqCi(c.facility, f.facility)) && (!f.zone || eqCi(c.zone, f.zone)) && (!f.discipline || eqCi(c.discipline, f.discipline))
+      && (!f.building || eqCi(w.building_name, f.building));
+  };
+}
+
 const listQuery = z.object({
   q: z.string().max(200).optional(),
+  building: z.string().max(1000).optional(),
+  inProgress: z.enum(['1', 'true']).optional(),
+  tdWithin: z.coerce.number().int().min(0).max(60).optional(),
   zone: z.string().max(500).optional(),
   discipline: z.string().max(500).optional(),
   facility: z.string().max(1000).optional(),
@@ -202,13 +236,16 @@ export async function filteredViews(app: FastifyInstance, scope: Scope, ctx: Com
   const q = query.q?.trim().toLowerCase();
   const own = (v: WrView) => v.internal as { ownerId: string | null; criterion: number | null; contractorStatus: string | null };
   const f = {
-    zone: csv(query.zone), discipline: csv(query.discipline), facility: csv(query.facility), wrStatus: csv(query.wrStatus),
+    building: csv(query.building), zone: csv(query.zone), discipline: csv(query.discipline), facility: csv(query.facility), wrStatus: csv(query.wrStatus),
     contractorStatus: csv(query.contractorStatus), tdStatus: csv(query.tdStatus), kpi: csv(query.kpi), ageBucket: csv(query.ageBucket),
     rfeTimeFrame: csv(query.rfeTimeFrame), workTeam: csv(query.workTeam), criterion: csv(query.criterion), qfStage: csv(query.qfStage),
   };
   views = views.filter((v) => {
     if (q && ![v.wrCode, v.buildingName, v.buildingCode, v.description, v.siteName, v.roomCode].some((x) => String(x ?? '').toLowerCase().includes(q))) return false;
     if (!inSet(f.zone, v.computed.zone) || !inSet(f.discipline, v.computed.discipline) || !inSet(f.facility, v.computed.facility)) return false;
+    if (!inSet(f.building, v.buildingName)) return false;
+    if (query.inProgress && !isInProgress(v)) return false;
+    if (query.tdWithin !== undefined && !isPriorityRequest(v, query.tdWithin)) return false;
     if (!inSet(f.wrStatus, v.wrStatus) || !inSet(f.tdStatus, v.computed.tdStatus) || !inSet(f.kpi, v.computed.kpi)) return false;
     if (!inSet(f.ageBucket, v.computed.month) || !inSet(f.rfeTimeFrame, v.computed.rfeTimeFrameKind) || !inSet(f.workTeam, v.workTeamCode)) return false;
     if (f.contractorStatus && !inSet(f.contractorStatus, own(v).contractorStatus ?? '(none)')) return false;
@@ -523,8 +560,29 @@ export default async function workRequestRoutes(app: FastifyInstance): Promise<v
   app.get('/api/dashboard', noTechnicians, async (request) => {
     const scope = await scopeOf(app, request);
     const ctx = await loadComputeContext(app, app.db, scope.contractorId);
-    const rows = await loadWrs(app.db, scope);
-    const views = rows.map((w) => wrView(w, ctx, scope.user));
+    const loc = z.object({
+      facility: z.string().max(200).optional(), building: z.string().max(200).optional(),
+      zone: z.string().max(200).optional(), discipline: z.string().max(200).optional(),
+    }).parse(request.query);
+    const allRows = await loadWrs(app.db, scope);
+    const allViews = allRows.map((w) => wrView(w, ctx, scope.user));
+    const uniq = (xs: unknown[]) => [...new Set(xs.map((x) => String(x ?? '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'en', { numeric: true }));
+    const pairs = new Map<string, { facility: string; building: string }>();
+    for (const v of allViews) {
+      const building = String(v.buildingName ?? '').trim();
+      if (!building) continue;
+      const facility = String(v.computed.facility ?? '').trim();
+      pairs.set(`${facility}\u0000${building}`, { facility, building });
+    }
+    const filterOptions = {
+      facilities: uniq(allViews.map((v) => v.computed.facility)),
+      zones: uniq(allViews.map((v) => v.computed.zone)),
+      disciplines: uniq(allViews.map((v) => v.computed.discipline)),
+      buildings: [...pairs.values()].sort((a, b) => a.facility.localeCompare(b.facility, 'en') || a.building.localeCompare(b.building, 'en', { numeric: true })),
+    };
+    const match = locationMatcher(ctx, loc);
+    const rows = allRows.filter(match);
+    const views = allViews.filter((_, i) => match(allRows[i]!));
     const summaryRows: SummaryRow[] = views.map((v) => ({
       dateRequested: v.dateRequested as string | null,
       month: v.computed.month,
@@ -575,10 +633,13 @@ export default async function workRequestRoutes(app: FastifyInstance): Promise<v
         WHERE b.contractor_id = $1 AND b.status = 'ok' ORDER BY b.created_at DESC LIMIT 1`,
       [scope.contractorId],
     );
-    const zr = await zeroRfeReport(app, scope, ctx, ctx.today.slice(0, 7));
+    const zr = await zeroRfeReport(app, scope, ctx, ctx.today.slice(0, 7), match);
     return {
       today: ctx.today,
       ...summary,
+      inProgress: views.filter(isInProgress).length,
+      priorityRequests: views.filter((v) => isPriorityRequest(v, 10)).length,
+      filterOptions,
       descriptiveStages,
       zeroRfe: { monthJobs: zr.totals.jobs, monthSpent: zr.totals.spent, withoutReceipt: zr.totals.withoutReceipt },
       needsActionToday: {

@@ -139,6 +139,56 @@ describe('ops: imports, work requests, dashboard, jobs, exports, deadlines', () 
     expect(s.needsActionToday.unownedCount).toBe(60);
   });
 
+  it('dashboard filters, In Progress and Priority Requests match the list filters', async () => {
+    const c = users.coord!.c;
+    const all = (await c.get('/api/dashboard')).json();
+    expect(all.filterOptions.zones.length).toBeGreaterThan(0);
+    expect(all.filterOptions.facilities.length).toBeGreaterThan(0);
+    const zone = all.filterOptions.zones[0] as string;
+    const byZone = (await c.get(`/api/dashboard?zone=${encodeURIComponent(zone.toUpperCase())}`)).json();
+    expect(byZone.totalOutstanding).toBeGreaterThan(0);
+    expect(byZone.totalOutstanding).toBeLessThan(all.totalOutstanding);
+    // filter options come from the unfiltered scope
+    expect(byZone.filterOptions).toEqual(all.filterOptions);
+    const listZone = (await c.get(`/api/work-requests?zone=${encodeURIComponent(zone)}&pageSize=500`)).json();
+    expect(listZone.total).toBe(byZone.totalOutstanding);
+    const bld = all.filterOptions.buildings[0] as { facility: string; building: string };
+    const byB = (await c.get(`/api/dashboard?facility=${encodeURIComponent(bld.facility)}&building=${encodeURIComponent(bld.building)}`)).json();
+    const listB = (await c.get(`/api/work-requests?facility=${encodeURIComponent(bld.facility)}&building=${encodeURIComponent(bld.building)}&pageSize=500`)).json();
+    expect(byB.totalOutstanding).toBe(listB.total);
+
+    // fictional target dates: today (in), today+10 (in), today+11 (out), yesterday (breached, out), none (out)
+    const day = (n: number) => new Date(Date.UTC(2026, 10, 9 + n)).toISOString().slice(0, 10);
+    const rows = (await ctx.db.query<{ id: string; wr_code: string; t: string | null; s: string | null }>(
+      `SELECT id, wr_code, agreed_target_date::text AS t, wr_status AS s FROM work_request WHERE contractor_id = $1 AND gone_at IS NULL ORDER BY wr_code LIMIT 6`, [aId],
+    )).rows;
+    const targets: (string | null)[] = [day(0), day(10), day(11), day(-1), null, day(3)];
+    const statuses = ['Assigned to Work Order', 'Assigned to Work Order', 'Assigned to Work Order', 'Assigned to Work Order', 'Assigned to Work Order', 'Completed'];
+    const statusBefore = (await c.get('/api/dashboard')).json().inProgress as number;
+    try {
+      for (const [i, r] of rows.entries()) {
+        await ctx.db.query('UPDATE work_request SET agreed_target_date = $2::timestamptz, wr_status = $3 WHERE id = $1', [r.id, targets[i] ? `${targets[i]}T00:00:00Z` : null, statuses[i]]);
+      }
+      const d = (await c.get('/api/dashboard')).json();
+      const pr = (await c.get('/api/work-requests?tdWithin=10&pageSize=500')).json();
+      expect(d.priorityRequests).toBe(pr.total);
+      const codes = pr.items.map((i: { wrCode: string }) => i.wrCode);
+      expect(codes).toEqual(expect.arrayContaining([rows[0]!.wr_code, rows[1]!.wr_code]));
+      for (const i of [2, 3, 4, 5]) expect(codes).not.toContain(rows[i]!.wr_code);
+      // an "Issued and In Process" WR counts as In Progress; a completed one does not
+      await ctx.db.query(`UPDATE work_request SET wr_status = 'Issued and In Process' WHERE id = $1`, [rows[0]!.id]);
+      await ctx.db.query(`UPDATE work_request SET wr_status = 'issued and in process' WHERE id = $1`, [rows[1]!.id]);
+      const d2 = (await c.get('/api/dashboard')).json();
+      const ip = (await c.get('/api/work-requests?inProgress=1&pageSize=500')).json();
+      expect(d2.inProgress).toBe(ip.total);
+      expect(ip.items.map((i: { wrCode: string }) => i.wrCode)).toEqual(expect.arrayContaining([rows[0]!.wr_code, rows[1]!.wr_code]));
+      expect(d2.inProgress).toBeGreaterThanOrEqual(2);
+      expect(statusBefore).toBeGreaterThanOrEqual(0);
+    } finally {
+      for (const r of rows) await ctx.db.query('UPDATE work_request SET agreed_target_date = $2::timestamptz, wr_status = $3 WHERE id = $1', [r.id, r.t, r.s]);
+    }
+  });
+
   it('computed columns on the API equal core', async () => {
     const list = (await users.coord!.c.get('/api/work-requests?pageSize=500')).json();
     expect(list.total).toBe(60);
@@ -341,7 +391,7 @@ describe('ops: imports, work requests, dashboard, jobs, exports, deadlines', () 
       return { n: d.descriptiveStages.find((s: { stage: number }) => s.stage === 6) as { label: string; count: number }, zeroRfe: d.zeroRfe as { monthJobs: number; monthSpent: number; withoutReceipt: number } };
     };
     const before = await stage6();
-    expect(before.n.label).toBe('6. Issue & progress');
+    expect(before.n.label).toBe('6. In Progress');
 
     // not the owner -> 403; foreman / purchasing -> 403; amount 100 -> 400
     const nonOwner = await users.sup1!.c.post(`/api/work-requests/${code}/zero-rfe`, { amount: 40 });
@@ -363,7 +413,7 @@ describe('ops: imports, work requests, dashboard, jobs, exports, deadlines', () 
     expect((await users.sup1!.c.post(`/api/work-requests/${code}/zero-rfe`, { amount: 10 })).statusCode).toBe(409);
     const after = await stage6();
     expect(after.n.count).toBe(before.n.count + 1);
-    expect(after.n.label).toBe('6. Issue & progress');
+    expect(after.n.label).toBe('6. In Progress');
     expect(after.zeroRfe).toEqual({ monthJobs: 1, monthSpent: 0, withoutReceipt: 1 });
     expect((await users.coord!.c.get('/api/work-requests?qfStage=6')).json().items.map((i: { wrCode: string }) => i.wrCode)).toContain(code);
     expect(await count(`SELECT count(*)::int n FROM wr_event WHERE type = 'wr.zero_rfe' AND work_request_id = $1`, [conv.json().id])).toBe(1);
@@ -396,7 +446,7 @@ describe('ops: imports, work requests, dashboard, jobs, exports, deadlines', () 
 
     const rep = (await users.coord!.c.get(`/api/zero-rfe?month=${TODAY.slice(0, 7)}`)).json();
     expect(rep.totals).toEqual({ jobs: 1, expected: 45.5, spent: 30.25, withoutReceipt: 0 });
-    expect(rep.items[0]).toMatchObject({ wrCode: code, purchases: 1, receipts: 1, expected: 45.5, spent: 30.25, qfStageLabel: '6. Issue & progress' });
+    expect(rep.items[0]).toMatchObject({ wrCode: code, purchases: 1, receipts: 1, expected: 45.5, spent: 30.25, qfStageLabel: '6. In Progress' });
     expect((await users.coord!.c.get('/api/zero-rfe?month=2020-01')).json().totals.jobs).toBe(0);
     expect((await users.tech!.c.get('/api/zero-rfe')).statusCode).toBe(403);
     expect((await bAdmin.get('/api/zero-rfe')).json().totals.jobs).toBe(0);

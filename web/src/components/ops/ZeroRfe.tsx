@@ -96,7 +96,7 @@ export function ZeroRfeBlock({ wr, role, userId }: { wr: WrDetail; role: string;
           <DialogHeader>
             <DialogTitle>Convert to 0 RFE</DialogTitle>
             <DialogDescription>
-              Material under QR 100 is bought locally with petty cash. No RFE goes to QF and the job moves to Issue &amp; progress. Remember to issue it in Marafiq without cost.
+              Material under QR 100 is bought locally with petty cash. No RFE goes to QF and the job moves to In Progress. Remember to issue it in Marafiq without cost.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-3">

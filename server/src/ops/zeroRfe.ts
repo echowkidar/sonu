@@ -13,14 +13,14 @@ import { auditFromRequest } from '../audit.js';
 import { requireRole } from '../auth/guards.js';
 import { withTx, type Queryable } from '../db.js';
 import { AppError, badRequest, conflict, forbidden, notFound } from '../errors.js';
-import { effectiveStage, inTeams, loadComputeContext, scopeOf, seesMoney, todayFor, computedFor, type ComputeContext, type Scope } from './context.js';
+import { effectiveStage, inTeams, loadComputeContext, scopeOf, seesMoney, todayFor, computedFor, type ComputeContext, type Scope, type WrRow } from './context.js';
 import { imageType, MAX_PHOTO_BYTES } from './jobs.js';
 import { ALL_SEEING, ensureInternal, findWr, loadWrs, sonuEvent, wrView } from './workRequests.js';
 
 export const ZERO_RFE_LIMIT = 100;
 export const MAX_RECEIPTS = 3;
 const CONTRACTOR_STATUS_ON_CONVERT = 'Work In Progress - TDGI';
-const STAGE_6_LABEL = '6. Issue & progress';
+const STAGE_6_LABEL = '6. In Progress';
 
 export interface PurchaseView {
   id: string;
@@ -84,9 +84,9 @@ export interface ZeroRfeReport {
 }
 
 /** Work requests converted to 0 RFE in `month` (YYYY-MM, contractor time zone), within the caller's scope. */
-export async function zeroRfeReport(app: FastifyInstance, scope: Scope, ctx: ComputeContext, month: string): Promise<ZeroRfeReport> {
+export async function zeroRfeReport(app: FastifyInstance, scope: Scope, ctx: ComputeContext, month: string, keep?: (w: WrRow) => boolean): Promise<ZeroRfeReport> {
   const money = seesMoney(scope.user);
-  const rows = (await loadWrs(app.db, scope, { includeGone: true })).filter((w) => w.zero_rfe_at && w.zero_rfe_month === month);
+  const rows = (await loadWrs(app.db, scope, { includeGone: true })).filter((w) => w.zero_rfe_at && w.zero_rfe_month === month && (!keep || keep(w)));
   const ids = rows.map((w) => w.id);
   const agg = new Map<string, { purchases: number; spent: number }>();
   const rec = new Map<string, number>();

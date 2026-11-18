@@ -78,6 +78,8 @@ export interface DeadlineCard {
 export interface DashboardData {
   today: string;
   totalOutstanding: number; breached: number; backlogKpi: number; averageAge: number; averageAgeFromRequested?: number | null;
+  inProgress: number; priorityRequests: number;
+  filterOptions: { facilities: string[]; zones: string[]; disciplines: string[]; buildings: { facility: string; building: string }[] };
   byDiscipline: Matrix; byZone: Matrix; byFacility: Matrix; byYear: Record<string, number>;
   ageBuckets: Record<string, number>; kpiSplit: Record<string, number>; tdSplit: Record<string, number>; rfeTimeFrameSplit: Record<string, number>;
   descriptiveStages: { stage: number; label: string; count: number }[] | null;
