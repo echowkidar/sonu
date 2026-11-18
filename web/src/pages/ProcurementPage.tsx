@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
-import { PackagePlus } from 'lucide-react';
+import { PackagePlus, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PageHeader } from '@/components/PageHeader';
@@ -9,15 +9,17 @@ import { QueryBoundary } from '@/components/admin/kit';
 import { apiGet } from '@/lib/api';
 import { OPS } from '@/lib/endpoints';
 import { COORD_LEVEL, mrListUrl } from '@/lib/mr';
+import { canViewClaims, claimListUrl, qar } from '@/lib/pettyCash';
 import { useSession } from '@/lib/session';
 import type { ProcurementSummary } from '@/lib/types';
 
 /**
  * Procurement dashboard: one tile per MR section, each opening the filtered list.
- * Coming next (not shown in the UI yet): Petty Cash and LPO sections get their own tiles here.
+ * Petty cash claims have their own tiles; the LPO section is still to come.
  */
 export function ProcurementView({ data }: { data: ProcurementSummary }) {
   const nav = useNavigate();
+  const pc = data.pettyCash ?? null;
   const go = (filters: Record<string, string>) => () => nav(mrListUrl(filters));
   return (
     <div className="grid gap-4">
@@ -34,6 +36,18 @@ export function ProcurementView({ data }: { data: ProcurementSummary }) {
       <p className="text-sm text-muted-foreground" data-testid="closed-this-month">
         <Link to={mrListUrl({ status: 'closed' })} className="underline">{data.closedThisMonth} closed this month</Link>
       </p>
+      {pc && (
+        <>
+          <section aria-label="Petty cash" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <KpiTile label="Petty Cash Claims" value={pc.draft + pc.pendingReview + pc.pendingApproval + pc.approved + pc.rejected} onClick={() => nav(claimListUrl({}))} />
+            <KpiTile label="Petty Cash Pending Approval" value={pc.pendingReview + pc.pendingApproval} tone={pc.pendingReview + pc.pendingApproval ? 'warning' : 'neutral'} onClick={() => nav(claimListUrl({ status: 'submitted,reviewed' }))} />
+            <KpiTile label="Approved / Rejected Claims" value={pc.approved + pc.rejected} tone={pc.approved ? 'success' : 'neutral'} onClick={() => nav(claimListUrl({ status: 'approved,rejected' }))} />
+          </section>
+          <p className="text-sm text-muted-foreground" data-testid="petty-cash-approved">
+            <Link to={claimListUrl({ status: 'approved' })} className="underline">{pc.approved} approved, {qar(pc.approvedAmountThisMonth)} this month</Link> · {pc.rejected} rejected · {pc.draft} in preparation
+          </p>
+        </>
+      )}
     </div>
   );
 }
@@ -46,9 +60,10 @@ export default function ProcurementPage() {
     <>
       <PageHeader
         title="Procurement"
-        description="Material requests from site, from New to Delivered."
+        description="Material requests from site, from New to Delivered, and petty cash claims."
         actions={
           <>
+            {user && canViewClaims(user.role) && <Button asChild variant="outline"><Link to="/petty-cash"><Wallet className="size-4" aria-hidden /> Petty cash</Link></Button>}
             <Button asChild variant="outline"><Link to="/procurement/mr">All requests</Link></Button>
             {canRaise && <Button asChild><Link to="/procurement/mr/new"><PackagePlus className="size-4" aria-hidden /> New request</Link></Button>}
           </>

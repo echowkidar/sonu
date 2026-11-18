@@ -281,10 +281,10 @@ describe('material requests and the procurement summary', () => {
     void late;
 
     const sum = (await users.purchasing!.c.get('/api/procurement/summary')).json();
-    expect(sum).toEqual({ new: 2, pending: 0, enquiry: 1, quoted: 0, ordered: 0, delivered: 1, closedThisMonth: 1, rejected: 1, overdue: 2 });
+    expect(sum).toMatchObject({ new: 2, pending: 0, enquiry: 1, quoted: 0, ordered: 0, delivered: 1, closedThisMonth: 1, rejected: 1, overdue: 2 });
     // the zone supervisor sees the same (all of it is in his zone); the other zone sees nothing
     expect((await users.sup1!.c.get('/api/procurement/summary')).json()).toEqual(sum);
-    expect((await users.sup2!.c.get('/api/procurement/summary')).json()).toEqual({ new: 0, pending: 0, enquiry: 0, quoted: 0, ordered: 0, delivered: 0, closedThisMonth: 0, rejected: 0, overdue: 0 });
+    expect((await users.sup2!.c.get('/api/procurement/summary')).json()).toMatchObject({ new: 0, pending: 0, enquiry: 0, quoted: 0, ordered: 0, delivered: 0, closedThisMonth: 0, rejected: 0, overdue: 0 });
     expect((await bAdmin.get('/api/procurement/summary')).json().new).toBe(0);
 
     const list = async (qs: string) => (await users.purchasing!.c.get(`/api/mr${qs}`)).json().items as { mrNo: number; status: string; overdue: boolean }[];

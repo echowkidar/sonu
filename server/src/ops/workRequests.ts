@@ -381,7 +381,7 @@ export default async function workRequestRoutes(app: FastifyInstance): Promise<v
           [cid, w.wr_code],
         )).rows[0] ?? null
       : undefined;
-    const localPurchases = await purchasesFor(db, cid, [w.id], money);
+    const localPurchases = await purchasesFor(db, cid, [w.id], money, scope.user.role !== 'foreman');
     const materialRequests = await materialRequestsFor(db, scope, w.id);
     return {
       ...view,

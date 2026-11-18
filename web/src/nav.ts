@@ -4,7 +4,7 @@
  */
 import {
   LayoutDashboard, ClipboardList, Wrench, Users, FileUp, Bell, UserCircle, Building2, UserCog, Network,
-  FileSpreadsheet, Receipt, ShoppingCart, PackageSearch, Mail, MessageSquare, PlugZap, SlidersHorizontal, ListChecks, ScrollText, Briefcase,
+  FileSpreadsheet, Receipt, Wallet, ShoppingCart, PackageSearch, Mail, MessageSquare, PlugZap, SlidersHorizontal, ListChecks, ScrollText, Briefcase,
   type LucideIcon,
 } from 'lucide-react';
 import type { Role } from './lib/roles';
@@ -37,6 +37,8 @@ export const NAV: readonly NavItem[] = [
   { id: 'imports', label: 'Imports', to: '/imports', icon: FileUp, roles: ['contractor_admin', 'coordinator', 'manager'], tab: 3, group: 'main' },
   // Low priority (no tab): it sits under "More" on the phone so the tab bar keeps its four main places.
   { id: 'zero-rfe', label: '0 RFE report', to: '/zero-rfe', icon: Receipt, roles: ['supervisor', 'foreman', 'purchasing', 'coordinator', 'manager', 'contractor_admin'], group: 'main' },
+  // No tab: under "More" on the phone. Supervisor, coordinator and manager prepare claims, the admin reviews, the manager approves, purchasing views.
+  { id: 'petty-cash', label: 'Petty cash', to: '/petty-cash', icon: Wallet, roles: ['supervisor', 'coordinator', 'manager', 'contractor_admin', 'purchasing'], group: 'main' },
   { id: 'notifications', label: 'Notifications', to: '/notifications', icon: Bell, roles: WORK_ROLES, tab: 4, group: 'main' },
   { id: 'profile', label: 'Profile', to: '/profile', icon: UserCircle, roles: ['platform_admin', ...WORK_ROLES], group: 'main' },
 
@@ -56,6 +58,8 @@ export const NAV: readonly NavItem[] = [
 const EXTRA_ACCESS: { prefix: string; roles: readonly Role[] }[] = [
   // Procurement list, request form and request pages; the server decides which requests each person sees.
   { prefix: '/procurement/mr', roles: ['contractor_admin', 'manager', 'coordinator', 'purchasing', 'supervisor', 'foreman'] },
+  // Petty cash claim form and claim pages; the server decides which claims each person sees.
+  { prefix: '/petty-cash/', roles: ['supervisor', 'coordinator', 'manager', 'contractor_admin', 'purchasing'] },
   { prefix: '/work-requests/', roles: ['contractor_admin', 'manager', 'coordinator', 'purchasing', 'supervisor', 'foreman'] },
   // Same roles the server lets view a job (ops/jobs.ts jobAccess); the server still checks each job.
   { prefix: '/my-jobs/', roles: ['technician', 'foreman', 'supervisor', 'coordinator', 'manager', 'contractor_admin'] },

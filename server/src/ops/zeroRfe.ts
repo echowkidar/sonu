@@ -32,20 +32,25 @@ export interface PurchaseView {
   createdById: string | null;
   createdAt: Date;
   attachments: { id: string; fileName: string; mime: string }[];
+  /** The active petty cash claim this purchase is on (null = not claimed yet). */
+  claim: { id: string; refNo: number; code: string; status: string } | null;
 }
 
 /** Local purchases of the given work requests (money is null for roles that do not see money). */
-export async function purchasesFor(db: Queryable, contractorId: string, wrIds: string[], money: boolean): Promise<Map<string, PurchaseView[]>> {
+export async function purchasesFor(db: Queryable, contractorId: string, wrIds: string[], money: boolean, withClaim = true): Promise<Map<string, PurchaseView[]>> {
   const out = new Map<string, PurchaseView[]>();
   if (!wrIds.length) return out;
   const r = await db.query<{
     id: string; work_request_id: string; item: string; amount: number; purchased_on: string; petty_cash_ref: string | null;
     created_by: string | null; created_by_name: string | null; created_at: Date;
     attachments: { id: string; fileName: string; mime: string }[];
+    claim: { id: string; refNo: number; status: string } | null;
   }>(
     `SELECT p.id, p.work_request_id, p.item, p.amount, p.purchased_on, p.petty_cash_ref, p.created_by, u.full_name AS created_by_name, p.created_at,
             COALESCE((SELECT json_agg(json_build_object('id', t.id, 'fileName', t.file_name, 'mime', t.mime) ORDER BY t.created_at)
-                        FROM attachment t WHERE t.contractor_id = p.contractor_id AND t.owner_type = 'local_purchase' AND t.owner_id = p.id), '[]') AS attachments
+                        FROM attachment t WHERE t.contractor_id = p.contractor_id AND t.owner_type = 'local_purchase' AND t.owner_id = p.id), '[]') AS attachments,
+            (SELECT json_build_object('id', c.id, 'refNo', c.ref_no, 'status', c.status) FROM petty_cash_line l JOIN petty_cash_claim c ON c.id = l.claim_id
+              WHERE l.local_purchase_id = p.id AND l.holds_purchase LIMIT 1) AS claim
        FROM local_purchase p LEFT JOIN app_user u ON u.id = p.created_by
       WHERE p.contractor_id = $1 AND p.work_request_id = ANY($2::uuid[]) ORDER BY p.purchased_on, p.created_at`,
     [contractorId, wrIds],
@@ -55,6 +60,7 @@ export async function purchasesFor(db: Queryable, contractorId: string, wrIds: s
     list.push({
       id: p.id, item: p.item, amount: money ? p.amount : null, purchasedOn: p.purchased_on, pettyCashRef: p.petty_cash_ref,
       createdByName: p.created_by_name, createdById: p.created_by, createdAt: p.created_at, attachments: p.attachments,
+      claim: withClaim && p.claim ? { ...p.claim, code: `PC-${p.claim.refNo}` } : null,
     });
     out.set(p.work_request_id, list);
   }
@@ -73,6 +79,9 @@ export interface ZeroRfeItem {
   spent: number | null;
   purchases: number;
   receipts: number;
+  /** Purchases that are on an active petty cash claim, and those claims (empty for roles without claim access). */
+  claimed: number;
+  claims: { id: string; code: string; status: string }[];
   wrStatus: string | null;
   qfStageLabel: string;
 }
@@ -90,7 +99,18 @@ export async function zeroRfeReport(app: FastifyInstance, scope: Scope, ctx: Com
   const ids = rows.map((w) => w.id);
   const agg = new Map<string, { purchases: number; spent: number }>();
   const rec = new Map<string, number>();
+  const claimInfo = new Map<string, { claimed: number; claims: { id: string; code: string; status: string }[] }>();
   if (ids.length) {
+    if (scope.user.role !== 'foreman') {
+      const cl = await app.db.query<{ work_request_id: string; n: number; claims: { id: string; refNo: number; status: string }[] }>(
+        `SELECT p.work_request_id, count(DISTINCT p.id)::int AS n,
+                json_agg(DISTINCT jsonb_build_object('id', c.id, 'refNo', c.ref_no, 'status', c.status)) AS claims
+           FROM local_purchase p JOIN petty_cash_line l ON l.local_purchase_id = p.id AND l.holds_purchase JOIN petty_cash_claim c ON c.id = l.claim_id
+          WHERE p.contractor_id = $1 AND p.work_request_id = ANY($2::uuid[]) GROUP BY p.work_request_id`,
+        [scope.contractorId, ids],
+      );
+      for (const r of cl.rows) claimInfo.set(r.work_request_id, { claimed: r.n, claims: r.claims.map((c) => ({ id: c.id, code: `PC-${c.refNo}`, status: c.status })).sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true })) });
+    }
     const a = await app.db.query<{ work_request_id: string; n: number; s: number }>(
       `SELECT work_request_id, count(*)::int AS n, COALESCE(sum(amount), 0) AS s FROM local_purchase
         WHERE contractor_id = $1 AND work_request_id = ANY($2::uuid[]) GROUP BY work_request_id`,
@@ -120,6 +140,8 @@ export async function zeroRfeReport(app: FastifyInstance, scope: Scope, ctx: Com
         spent: money ? g.spent : null,
         purchases: g.purchases,
         receipts: rec.get(w.id) ?? 0,
+        claimed: claimInfo.get(w.id)?.claimed ?? 0,
+        claims: claimInfo.get(w.id)?.claims ?? [],
         wrStatus: w.wr_status,
         qfStageLabel: effectiveStage(w) === 6 ? STAGE_6_LABEL : (w.descriptive_status ?? ''),
       };
@@ -314,6 +336,9 @@ export default async function zeroRfeRoutes(app: FastifyInstance): Promise<void>
       [id, scope.contractorId, w.id],
     )).rows[0];
     if (!p) throw notFound('Purchase not found.');
+    const onClaim = (await app.db.query<{ ref_no: number }>(
+      `SELECT c.ref_no FROM petty_cash_line l JOIN petty_cash_claim c ON c.id = l.claim_id WHERE l.local_purchase_id = $1 AND l.holds_purchase LIMIT 1`, [id])).rows[0];
+    if (onClaim) throw conflict(`This purchase is on petty cash claim PC-${onClaim.ref_no}. Remove the line from the claim first.`);
     const allSeeing = (ALL_SEEING as readonly string[]).includes(scope.user.role);
     if (!allSeeing && p.created_by !== scope.user.id) throw forbidden('Only the person who added it, or a coordinator, can delete a purchase.');
     const files = await withTx(app.db, async (c) => {

@@ -17,6 +17,7 @@ import { AppError, badRequest, conflict, forbidden, notFound } from '../errors.j
 import { notify } from '../notifications/index.js';
 import { computedFor, loadComputeContext, scopeOf, scopeSql, seesMoney, todayFor, type Scope } from './context.js';
 import { imageType, MAX_PHOTO_BYTES } from './jobs.js';
+import { pettyCashSummary } from './pettyCash.js';
 import { findWr, sonuEvent } from './workRequests.js';
 
 export const MR_STATUSES = ['submitted', 'accepted', 'enquiry', 'quoted', 'ordered', 'delivered', 'closed', 'rejected', 'cancelled'] as const;
@@ -558,7 +559,7 @@ export default async function materialRoutes(app: FastifyInstance): Promise<void
          FROM material_request m WHERE m.contractor_id = $1 AND ${vis}`,
       params,
     );
-    return r.rows[0];
+    return { ...r.rows[0], pettyCash: await pettyCashSummary(app.db, scope, tz, today.slice(0, 7)) };
   });
 
   // ───── detail ─────

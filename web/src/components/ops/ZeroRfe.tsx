@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Receipt, Trash2, Undo2 } from 'lucide-react';
+import { Link } from 'react-router';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { PhotoPicker, type PickedPhoto } from '@/components/PhotoPicker';
@@ -16,6 +17,7 @@ import { api, apiDelete, apiPost } from '@/lib/api';
 import { OPS } from '@/lib/endpoints';
 import { errorMessage, formatDateTime } from '@/lib/forms';
 import { canConvertZeroRfe, COORD_ROLES, PURCHASE_ROLES } from '@/lib/ops';
+import { canViewClaims, PC_STATUS } from '@/lib/pettyCash';
 import type { WrDetail } from '@/lib/types';
 
 export const ZERO_RFE_LIMIT = 100;
@@ -132,6 +134,7 @@ export function LocalPurchasesCard({ wr, role, userId }: { wr: WrDetail; role: s
   const [error, setError] = React.useState<string | null>(null);
   const [delId, setDelId] = React.useState<string | null>(null);
   const list = wr.localPurchases ?? [];
+  const showClaims = canViewClaims(role) && list.some((p) => p.claim !== undefined);
   const canAdd = (PURCHASE_ROLES as readonly string[]).includes(role);
   const isCoord = (COORD_ROLES as readonly string[]).includes(role);
   const spent = list.every((p) => p.amount != null) ? list.reduce((t, p) => t + (p.amount ?? 0), 0) : null;
@@ -188,6 +191,13 @@ export function LocalPurchasesCard({ wr, role, userId }: { wr: WrDetail; role: s
                     <Button size="sm" variant="ghost" aria-label={`Delete purchase ${p.item}`} onClick={() => setDelId(p.id)}><Trash2 className="size-4" aria-hidden /></Button>
                   )}
                 </div>
+                {showClaims && (
+                  <p className="text-xs" data-testid={`purchase-claim-${p.id}`}>
+                    {p.claim
+                      ? <>On petty cash claim <Link to={`/petty-cash/${p.claim.id}`} className="font-mono underline">{p.claim.code}</Link> ({PC_STATUS[p.claim.status].label})</>
+                      : <span className="text-muted-foreground">Not claimed yet</span>}
+                  </p>
+                )}
                 {p.attachments.length === 0 ? (
                   <p className="text-xs font-semibold text-warning">No receipt photo yet</p>
                 ) : (

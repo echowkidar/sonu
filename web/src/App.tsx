@@ -31,6 +31,9 @@ const Procurement = lazyPage(() => import('@/pages/ProcurementPage'));
 const MrList = lazyPage(() => import('@/pages/MrListPage'));
 const MrForm = lazyPage(() => import('@/pages/MrFormPage'));
 const MrDetail = lazyPage(() => import('@/pages/MrDetailPage'));
+const PettyCashList = lazyPage(() => import('@/pages/PettyCashListPage'));
+const PettyCashNew = lazyPage(() => import('@/pages/PettyCashNewPage'));
+const PettyCashDetail = lazyPage(() => import('@/pages/PettyCashDetailPage'));
 const Imports = lazyPage(() => import('@/pages/ImportsPage'));
 const Notifications = lazyPage(() => import('@/pages/NotificationsPage'));
 const Profile = lazyPage(() => import('@/pages/ProfilePage'));
@@ -95,6 +98,9 @@ export default function App() {
                     <Route path="/procurement/mr/new" element={<MrForm />} />
                     <Route path="/procurement/mr/:id" element={<MrDetail />} />
                     <Route path="/procurement/mr/:id/edit" element={<MrForm />} />
+                    <Route path="/petty-cash" element={<PettyCashList />} />
+                    <Route path="/petty-cash/new" element={<PettyCashNew />} />
+                    <Route path="/petty-cash/:id" element={<PettyCashDetail />} />
                     <Route path="/imports" element={<Imports />} />
                     <Route path="/notifications" element={<Notifications />} />
                     <Route path="/profile" element={<Profile />} />

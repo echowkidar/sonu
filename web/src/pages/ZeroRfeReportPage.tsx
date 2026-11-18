@@ -13,11 +13,13 @@ import { QueryBoundary } from '@/components/admin/kit';
 import { apiGet } from '@/lib/api';
 import { OPS } from '@/lib/endpoints';
 import { fmtDate } from '@/lib/ops';
+import { PC_STATUS } from '@/lib/pettyCash';
+import { useSession } from '@/lib/session';
 import type { ZeroRfeReport } from '@/lib/types';
 
 const qr = (n: number | null) => (n === null ? '—' : `QR ${n.toLocaleString(undefined, { maximumFractionDigits: 2 })}`);
 
-export function ZeroRfeReportView({ data }: { data: ZeroRfeReport }) {
+export function ZeroRfeReportView({ data, showClaims = true }: { data: ZeroRfeReport; showClaims?: boolean }) {
   const t = data.totals;
   return (
     <div className="grid gap-4">
@@ -46,6 +48,13 @@ export function ZeroRfeReportView({ data }: { data: ZeroRfeReport }) {
                     <span className="text-xs text-muted-foreground">
                       {[i.zone, i.discipline, `Converted ${fmtDate(i.convertedAt)}${i.convertedByName ? ` by ${i.convertedByName}` : ''}`].filter(Boolean).join(' · ')}
                     </span>
+                    {showClaims && i.claimed !== undefined && (
+                      <span className="text-xs" data-testid={`claim-${i.wrCode}`}>
+                        {i.claimed === 0
+                          ? <span className="text-muted-foreground">Not claimed yet</span>
+                          : <span>On petty cash claim: {(i.claims ?? []).map((c) => `${c.code} (${PC_STATUS[c.status].label})`).join(', ')}{i.claimed < i.purchases ? ` · ${i.purchases - i.claimed} not claimed yet` : ''}</span>}
+                      </span>
+                    )}
                     <span className="text-sm tabular-nums">Expected {qr(i.expected)} · spent {qr(i.spent)} · {i.purchases} {i.purchases === 1 ? 'purchase' : 'purchases'}</span>
                   </Link>
                 </CardContent>
@@ -59,6 +68,7 @@ export function ZeroRfeReportView({ data }: { data: ZeroRfeReport }) {
 }
 
 export default function ZeroRfeReportPage() {
+  const { user } = useSession();
   const [month, setMonth] = React.useState('');
   const q = useQuery({ queryKey: ['zero-rfe', month], queryFn: () => apiGet<ZeroRfeReport>(OPS.zeroRfeReport, { query: { month: month || undefined } }) });
   const shown = month || q.data?.month || '';
@@ -75,7 +85,7 @@ export default function ZeroRfeReportPage() {
         }
       />
       <QueryBoundary query={q} skeleton={<div className="grid gap-3" aria-busy="true" aria-label="Loading"><Skeleton className="h-24" /><Skeleton className="h-40" /></div>}>
-        {(d) => <ZeroRfeReportView data={d} />}
+        {(d) => <ZeroRfeReportView data={d} showClaims={user?.role !== 'foreman'} />}
       </QueryBoundary>
     </>
   );

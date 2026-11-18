@@ -97,10 +97,13 @@ export interface ZeroRfeInfo { at: string; byName: string | null; amount: number
 export interface LocalPurchase {
   id: string; item: string; amount: number | null; purchasedOn: string; pettyCashRef: string | null; createdByName: string | null; createdById?: string | null; createdAt: string;
   attachments: { id: string; fileName: string; mime: string }[];
+  /** The active petty cash claim this purchase is on (null = not claimed yet). Older servers do not send it. */
+  claim?: { id: string; refNo: number; code: string; status: PettyCashStatus } | null;
 }
 export interface ZeroRfeItem {
   wrCode: string; buildingName: string | null; description: string | null; zone: string | null; discipline: string | null; convertedAt: string; convertedByName: string | null;
   expected: number | null; spent: number | null; purchases: number; receipts: number; wrStatus: string | null; qfStageLabel: string;
+  claimed?: number; claims?: { id: string; code: string; status: PettyCashStatus }[];
 }
 export interface ZeroRfeReport {
   month: string;
@@ -243,6 +246,32 @@ export interface MrListItem {
   purpose: 'stock' | 'new'; lines: number; firstDescription: string | null; facility: string | null; buildingName: string | null; requestedByName: string | null;
   assignedToName: string | null; vendorName: string | null; quotedAmount: number | null; expectedDelivery: string | null; overdue: boolean; updatedAt: string;
 }
+export interface PettyCashSummary { draft: number; pendingReview: number; pendingApproval: number; approved: number; rejected: number; approvedAmountThisMonth: number }
 export interface ProcurementSummary {
   new: number; pending: number; enquiry: number; quoted: number; ordered: number; delivered: number; closedThisMonth: number; rejected: number; overdue: number;
+  /** null / missing: the role has no access to claims (or an older server). */
+  pettyCash?: PettyCashSummary | null;
 }
+
+export type PettyCashStatus = 'draft' | 'submitted' | 'returned' | 'reviewed' | 'approved' | 'rejected';
+export interface PettyCashReceipt { id: string; fileName: string; mime: string; source: 'line' | 'local_purchase' }
+export interface PettyCashLine {
+  id: string; lineNo: number; workRequestId: string | null; wrCode: string | null; wrStatus: string | null; localPurchaseId: string | null; grnCode: string | null; glCode: string | null; wbs: string | null;
+  workDescription: string | null; location: string | null; rfeApprovedAmount: number; claimable: boolean; supplier: string | null; materialUsed: string | null; billDate: string | null;
+  billNo: string | null; qty: number; unit: string | null; unitCost: number; discount: number; totalAmount: number; approvedTotal: number | null; receipts: PettyCashReceipt[];
+}
+export interface PettyCashHeader {
+  id: string; refNo: number; code: string; status: PettyCashStatus; statusLabel: string; projectName: string | null; month: string; purchaseType: 'materials' | 'services';
+  preparedBy: string | null; preparedByName: string | null; reviewedByName: string | null; reviewedAt: string | null; approvedByName: string | null; approvedAt: string | null;
+  totalAmount: number; approvedAmount: number | null; pending: { role: string | null; label: string | null }; createdAt: string; updatedAt: string;
+}
+export interface PettyCashListItem extends PettyCashHeader { lines: number }
+export interface PettyCashHistory { id: string; fromStatus: PettyCashStatus | null; toStatus: PettyCashStatus; note: string | null; at: string; userName: string | null }
+export interface PettyCashDetail extends PettyCashHeader {
+  preparedAt: string | null; lines: PettyCashLine[]; history: PettyCashHistory[]; unclaimedCount: number;
+  can: { edit: boolean; submit: boolean; review: boolean; return: boolean; approve: boolean; reject: boolean; importPurchases: boolean; export: boolean; role: string };
+}
+export type PettyCashLineInput = Partial<{
+  wrCode: string | null; grnCode: string | null; glCode: string | null; wbs: string | null; workDescription: string | null; location: string | null; rfeApprovedAmount: number;
+  claimable: boolean; supplier: string | null; materialUsed: string | null; billDate: string | null; billNo: string | null; qty: number; unit: string | null; unitCost: number; discount: number;
+}>;
