@@ -18,8 +18,11 @@ export interface PatchBody { takeOwnership?: true; ownerId?: string | null; crit
 /** SONU's own fields on a work request: owner, criterion, contractor status (with the suggestion) and FC remarks. */
 export function SonuPanel({ wr, meta, role, userId }: { wr: WrDetail; meta: Meta | undefined; role: string; userId: string }) {
   const qc = useQueryClient();
-  const canEdit = (CAN_EDIT_WR as readonly string[]).includes(role);
   const isCoord = (COORD_ROLES as readonly string[]).includes(role);
+  // Mirrors the server PATCH rules: a foreman cannot take ownership, and anyone below
+  // coordinator must own the WR before changing criterion, status or remarks.
+  const canTakeOwnership = (CAN_EDIT_WR as readonly string[]).includes(role) && role !== 'foreman';
+  const canEdit = isCoord || ((CAN_EDIT_WR as readonly string[]).includes(role) && wr.internal.ownerId === userId);
   const [remarks, setRemarks] = React.useState(wr.internal.fcRemarks ?? '');
   React.useEffect(() => setRemarks(wr.internal.fcRemarks ?? ''), [wr.internal.fcRemarks]);
 
@@ -47,7 +50,7 @@ export function SonuPanel({ wr, meta, role, userId }: { wr: WrDetail; meta: Meta
           <Label htmlFor="sonu-owner">Owner</Label>
           <div className="flex flex-wrap items-center gap-2">
             <span className="min-w-0 flex-1 text-sm">{wr.internal.ownerName ?? <span className="text-muted-foreground">Nobody owns this yet</span>}</span>
-            {canEdit && wr.internal.ownerId !== userId && (
+            {canTakeOwnership && wr.internal.ownerId !== userId && (
               <Button size="sm" onClick={() => patch.mutate({ takeOwnership: true })} disabled={patch.isPending}><UserCheck className="size-4" aria-hidden /> Take ownership</Button>
             )}
           </div>
@@ -83,6 +86,7 @@ export function SonuPanel({ wr, meta, role, userId }: { wr: WrDetail; meta: Meta
             <option value="">No status</option>
             {statuses.map((s) => <option key={s.name} value={s.name}>{s.name}{sug?.status === s.name ? ' (suggested)' : ''}</option>)}
           </NativeSelect>
+          {!canEdit && canTakeOwnership && <p className="text-xs text-muted-foreground">Take ownership to change criterion, status or remarks.</p>}
           {wr.internal.statusSource && <p className="text-xs text-muted-foreground">Set by: {wr.internal.statusSource}</p>}
         </div>
 

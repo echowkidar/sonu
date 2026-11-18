@@ -467,7 +467,7 @@ export default async function workRequestRoutes(app: FastifyInstance): Promise<v
     if (body.ownerId && body.ownerId !== user.id && updated) {
       await notify(app, {
         contractorId: scope.contractorId, event: 'wr.owner_assigned', recipients: [body.ownerId], title: `You now own ${updated} more work request${updated > 1 ? 's' : ''}`,
-        link: '/my-work', channels: ['in_app', 'push'],
+        link: '/work-requests', channels: ['in_app', 'push'],
       });
     }
     return { updated, notFound: body.codes.filter((c) => !foundCodes.has(c)) };

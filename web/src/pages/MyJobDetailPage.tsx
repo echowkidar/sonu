@@ -13,6 +13,8 @@ import { OPS } from '@/lib/endpoints';
 import { formatDateTime } from '@/lib/forms';
 import { JOB_STATUS, jobLocation, jobPermit } from '@/lib/ops';
 import type { JobDetail } from '@/lib/types';
+import { useSession } from '@/lib/session';
+import { canAccess, homeForRole } from '@/nav';
 
 export function JobView({ job }: { job: JobDetail }) {
   const permit = jobPermit(job);
@@ -76,9 +78,14 @@ export function JobView({ job }: { job: JobDetail }) {
 export default function MyJobDetailPage() {
   const { id = '' } = useParams();
   const q = useQuery({ queryKey: ['job', id], queryFn: () => apiGet<JobDetail>(OPS.job(id)) });
+  const { user } = useSession();
+  // Not every role that may open a job has "My jobs": go back to a list the role can open.
+  const back = user && !canAccess(user.role, '/my-jobs')
+    ? (canAccess(user.role, '/team-jobs') ? { to: '/team-jobs', label: 'Team jobs' } : { to: homeForRole(user.role), label: 'Home' })
+    : { to: '/my-jobs', label: 'My jobs' };
   return (
     <div className="mx-auto max-w-xl">
-      <Button asChild variant="ghost" size="sm" className="mb-2"><Link to="/my-jobs"><ArrowLeft className="size-4" aria-hidden /> My jobs</Link></Button>
+      <Button asChild variant="ghost" size="sm" className="mb-2"><Link to={back.to}><ArrowLeft className="size-4" aria-hidden /> {back.label}</Link></Button>
       {q.isPending ? <div className="grid gap-3" aria-busy="true" aria-label="Loading"><Skeleton className="h-48" /><Skeleton className="h-14" /></div>
         : q.isError ? <ErrorState error={q.error} onRetry={() => void q.refetch()} />
         : <JobView job={q.data} />}

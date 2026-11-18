@@ -51,6 +51,16 @@ describe('nav config', () => {
     expect(canAccess('platform_admin', '/my-jobs/abc')).toBe(false);
   });
 
+  it('every notification target opens for the roles that receive it', () => {
+    // owner notifications (/work-requests/<code>, bulk /work-requests) go to OWNER_ROLES
+    for (const r of ['supervisor', 'foreman', 'coordinator', 'manager', 'contractor_admin'] as const) {
+      expect(canAccess(r, '/work-requests/123'), r).toBe(true);
+      expect(canAccess(r, '/work-requests'), r).toBe(true);
+    }
+    expect(canAccess('contractor_admin', '/admin/marafiq')).toBe(true);
+    expect(canAccess('manager', '/imports')).toBe(true);
+  });
+
   it('every role can open its profile except none are locked out', () => {
     for (const r of ROLES) expect(canAccess(r, '/profile')).toBe(true);
   });

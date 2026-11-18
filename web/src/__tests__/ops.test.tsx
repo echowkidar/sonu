@@ -149,7 +149,8 @@ describe('Contractor status suggestion', () => {
 
   it('shows "Suggested: ... because ..." and accepting sends a PATCH', async () => {
     mockFetch(() => ({}));
-    wrap(<SonuPanel wr={wr} meta={meta} role="supervisor" userId="u1" />);
+    const owned = { ...wr, internal: { ...wr.internal, ownerId: 'u1' } } as WrDetail;
+    wrap(<SonuPanel wr={owned} meta={meta} role="supervisor" userId="u1" />);
     const box = screen.getByTestId('status-suggestion');
     expect(box).toHaveTextContent('Suggested: Awaiting Approval - QF because the estimate was submitted');
     await userEvent.click(within(box).getByRole('button', { name: /Accept suggestion/ }));
@@ -157,6 +158,17 @@ describe('Contractor status suggestion', () => {
     const patch = calls.find((c) => c.method === 'PATCH')!;
     expect(patch.url).toBe('/api/work-requests/1234567');
     expect(patch.body).toEqual({ contractorStatus: 'Awaiting Approval - QF' });
+  });
+
+  it('a supervisor who does not own the WR must take ownership first (server rule)', () => {
+    wrap(<SonuPanel wr={wr} meta={meta} role="supervisor" userId="u1" />);
+    expect(screen.queryByRole('button', { name: /Accept suggestion/ })).toBeNull();
+    expect(screen.getByRole('button', { name: /Take ownership/ })).toBeInTheDocument();
+  });
+
+  it('a foreman is never offered ownership', () => {
+    wrap(<SonuPanel wr={wr} meta={meta} role="foreman" userId="u1" />);
+    expect(screen.queryByRole('button', { name: /Take ownership/ })).toBeNull();
   });
 
   it('read-only roles cannot accept', () => {

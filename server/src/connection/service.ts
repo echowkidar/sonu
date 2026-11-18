@@ -327,7 +327,7 @@ export async function applyJobResult(app: FastifyInstance, jobId: string, body: 
       event: 'marafiq.needs_attention',
       title: 'Marafiq connection needs attention',
       body: 'The background connection could not sign in to Marafiq and has stopped. Enter the new password or press Resume. Manual import still works.',
-      url: '/admin/marafiq-connection',
+      url: '/admin/marafiq',
       record: { type: 'marafiq_connection', id: job.connection_id },
     });
   } else {

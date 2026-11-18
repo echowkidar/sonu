@@ -89,11 +89,13 @@ async function main() {
       if (u.reportsTo) await db.query('UPDATE app_user SET reports_to = $2 WHERE id = $1', [ids.get(u.key), ids.get(u.reportsTo)]);
     }
 
-    // A few jobs per technician, from open WRs of their team (only when none exist yet).
-    const have = await db.query('SELECT 1 FROM assignment WHERE contractor_id = $1 LIMIT 1', [c.id]);
-    if (!have.rowCount) {
+    // A few jobs per demo technician, from open WRs of their team (only for a technician who has none yet,
+    // so other assignments in the database do not leave the demo field views empty).
+    {
       const plan: [string, string][] = [['tech1', 'TEST-WT-1'], ['tech2', 'TEST-WT-2'], ['tech3', 'TEST-WT-3']];
       for (const [tech, team] of plan) {
+        const has = await db.query('SELECT 1 FROM assignment WHERE contractor_id = $1 AND assignee_id = $2 LIMIT 1', [c.id, ids.get(tech)]);
+        if (has.rowCount) continue;
         const wrs = await db.query<{ id: string }>(
           'SELECT id FROM work_request WHERE contractor_id = $1 AND work_team_code = $2 AND gone_at IS NULL ORDER BY wr_code LIMIT 4',
           [c.id, team],
@@ -110,7 +112,8 @@ async function main() {
           await db.query(
             `INSERT INTO wr_internal (contractor_id, work_request_id, owner_id) VALUES ($1,$2,$3)
              ON CONFLICT (work_request_id) DO UPDATE SET owner_id = EXCLUDED.owner_id`,
-            [c.id, w.id, ids.get(tech)],
+            // The supervisor who assigned the job owns the WR; technicians are never owners.
+            [c.id, w.id, ids.get('supervisor1')],
           );
           i++;
         }

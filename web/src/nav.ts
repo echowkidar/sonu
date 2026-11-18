@@ -27,8 +27,9 @@ export const NAV: readonly NavItem[] = [
   { id: 'my-work', label: 'My work', to: '/my-work', icon: Briefcase, roles: ['supervisor'], tab: 1, group: 'main' },
   { id: 'my-jobs', label: 'My jobs', to: '/my-jobs', icon: Wrench, roles: ['technician', 'foreman'], tab: 1, group: 'main' },
   { id: 'team-jobs', label: 'Team jobs', to: '/team-jobs', icon: Users, roles: ['foreman', 'supervisor'], tab: 2, group: 'main' },
-  { id: 'work-requests', label: 'Work requests', to: '/work-requests', icon: ClipboardList, roles: ['contractor_admin', 'manager', 'coordinator', 'purchasing', 'supervisor'], tab: 2, group: 'main' },
-  { id: 'imports', label: 'Imports', to: '/imports', icon: FileUp, roles: ['contractor_admin', 'coordinator'], tab: 3, group: 'main' },
+  // Foreman can own work requests (server OWNER_ROLES), so he needs the list and detail too.
+  { id: 'work-requests', label: 'Work requests', to: '/work-requests', icon: ClipboardList, roles: ['contractor_admin', 'manager', 'coordinator', 'purchasing', 'supervisor', 'foreman'], tab: 3, group: 'main' },
+  { id: 'imports', label: 'Imports', to: '/imports', icon: FileUp, roles: ['contractor_admin', 'coordinator', 'manager'], tab: 3, group: 'main' },
   { id: 'notifications', label: 'Notifications', to: '/notifications', icon: Bell, roles: WORK_ROLES, tab: 4, group: 'main' },
   { id: 'profile', label: 'Profile', to: '/profile', icon: UserCircle, roles: ['platform_admin', ...WORK_ROLES], group: 'main' },
 
@@ -46,7 +47,7 @@ export const NAV: readonly NavItem[] = [
 
 /** Routes that are not menu items but still need a role rule (detail pages). */
 const EXTRA_ACCESS: { prefix: string; roles: readonly Role[] }[] = [
-  { prefix: '/work-requests/', roles: ['contractor_admin', 'manager', 'coordinator', 'purchasing', 'supervisor'] },
+  { prefix: '/work-requests/', roles: ['contractor_admin', 'manager', 'coordinator', 'purchasing', 'supervisor', 'foreman'] },
   // Same roles the server lets view a job (ops/jobs.ts jobAccess); the server still checks each job.
   { prefix: '/my-jobs/', roles: ['technician', 'foreman', 'supervisor', 'coordinator', 'manager', 'contractor_admin'] },
 ];
