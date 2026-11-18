@@ -236,6 +236,13 @@ export interface WrRow {
   status_source: string | null;
   due_at: Date | null;
   breach_level: number | null;
+  // 0 RFE (local purchase with petty cash, no estimate sent to QF)
+  zero_rfe_at: Date | null;
+  zero_rfe_amount: number | null;
+  zero_rfe_note: string | null;
+  zero_rfe_by_name: string | null;
+  /** 'YYYY-MM' of zero_rfe_at in the contractor's time zone. */
+  zero_rfe_month: string | null;
 }
 
 export const WR_SELECT = `
@@ -248,11 +255,14 @@ export const WR_SELECT = `
          w.est_total_cost, w.descriptive_status, w.with_rfe, w.progress_pct, w.closure_comments,
          w.first_seen_at, w.last_seen_at, w.gone_at,
          to_char(w.first_seen_at AT TIME ZONE COALESCE(ct.time_zone, 'Asia/Qatar'), 'YYYY-MM-DD') AS first_seen_date,
-         i.owner_id, u.full_name AS owner_name, i.criterion, i.contractor_status, i.fc_remarks, i.status_source, i.due_at, i.breach_level
+         i.owner_id, u.full_name AS owner_name, i.criterion, i.contractor_status, i.fc_remarks, i.status_source, i.due_at, i.breach_level,
+         i.zero_rfe_at, i.zero_rfe_amount, i.zero_rfe_note, zu.full_name AS zero_rfe_by_name,
+         to_char(i.zero_rfe_at AT TIME ZONE COALESCE(ct.time_zone, 'Asia/Qatar'), 'YYYY-MM') AS zero_rfe_month
     FROM work_request w
     JOIN contractor ct ON ct.id = w.contractor_id
     LEFT JOIN wr_internal i ON i.work_request_id = w.id
-    LEFT JOIN app_user u ON u.id = i.owner_id`;
+    LEFT JOIN app_user u ON u.id = i.owner_id
+    LEFT JOIN app_user zu ON zu.id = i.zero_rfe_by`;
 
 export function computedFor(w: WrRow, ctx: ComputeContext): ComputedColumns {
   return computeColumns(
@@ -319,6 +329,16 @@ export function suggestedFor(w: WrRow, ctx: ComputeContext) {
 export function stageNo(desc: string | null | undefined): number | null {
   const m = /^\s*(\d+)\s*[.\-)]/.exec(desc ?? '');
   return m ? Number(m[1]) : null;
+}
+
+/**
+ * Stage used for the dashboard tiles and the stage filter: a WR converted to 0 RFE counts under 6 (Issue & progress)
+ * while Marafiq still shows it at stage 2-5 (or has no stage yet). Later Marafiq stages (6, 7, 8) are kept.
+ */
+export function effectiveStage(w: Pick<WrRow, 'descriptive_status' | 'zero_rfe_at'>): number | null {
+  const s = stageNo(w.descriptive_status);
+  if (w.zero_rfe_at && (s === null || (s >= 2 && s <= 5))) return 6;
+  return s;
 }
 
 // ───────────────────────────── access scope ─────────────────────────────

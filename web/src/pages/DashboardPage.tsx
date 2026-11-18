@@ -108,6 +108,15 @@ export function DashboardView({ data }: { data: DashboardData }) {
         </section>
       )}
 
+      {data.zeroRfe && (
+        <Link to="/zero-rfe" className="rounded-lg border bg-card px-4 py-3 text-sm hover:bg-muted/50" data-testid="zero-rfe-card">
+          <span className="font-semibold">0 RFE this month:</span>{' '}
+          {data.zeroRfe.monthJobs} {data.zeroRfe.monthJobs === 1 ? 'job' : 'jobs'}
+          {data.zeroRfe.monthSpent != null && <> · QR {data.zeroRfe.monthSpent.toLocaleString(undefined, { maximumFractionDigits: 2 })} spent</>}
+          {' '}· {data.zeroRfe.withoutReceipt} without receipt
+        </Link>
+      )}
+
       {n.breachedTd && (
         <section aria-label="Top priority">
           <ActionList

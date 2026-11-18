@@ -67,4 +67,11 @@ export function fmtDate(v: string | null | undefined): string {
 
 export const CAN_EDIT_WR = ['supervisor', 'foreman', 'coordinator', 'manager', 'contractor_admin'] as const;
 export const COORD_ROLES = ['coordinator', 'manager', 'contractor_admin'] as const;
+/** Who may convert a WR to 0 RFE: coordinator level, or the supervisor who owns it (server rule). */
+export function canConvertZeroRfe(role: string, ownerId: string | null, userId: string): boolean {
+  if ((COORD_ROLES as readonly string[]).includes(role)) return true;
+  return role === 'supervisor' && ownerId === userId;
+}
+export const PURCHASE_ROLES = ['supervisor', 'foreman', 'purchasing', 'coordinator', 'manager', 'contractor_admin'] as const;
+
 export const OWNER_ROLES = ['supervisor', 'foreman', 'coordinator', 'manager', 'contractor_admin'];

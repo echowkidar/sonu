@@ -11,6 +11,7 @@ import { apiPatch } from '@/lib/api';
 import { OPS } from '@/lib/endpoints';
 import { errorMessage } from '@/lib/forms';
 import { CAN_EDIT_WR, COORD_ROLES, OWNER_ROLES } from '@/lib/ops';
+import { ZeroRfeBlock } from '@/components/ops/ZeroRfe';
 import type { Meta, WrDetail } from '@/lib/types';
 
 export interface PatchBody { takeOwnership?: true; ownerId?: string | null; criterion?: number | null; contractorStatus?: string | null; fcRemarks?: string }
@@ -89,6 +90,8 @@ export function SonuPanel({ wr, meta, role, userId }: { wr: WrDetail; meta: Meta
           {!canEdit && canTakeOwnership && <p className="text-xs text-muted-foreground">Take ownership to change criterion, status or remarks.</p>}
           {wr.internal.statusSource && <p className="text-xs text-muted-foreground">Set by: {wr.internal.statusSource}</p>}
         </div>
+
+        <ZeroRfeBlock wr={wr} role={role} userId={userId} />
 
         <div className="grid gap-1.5">
           <Label htmlFor="sonu-remarks">FC remarks</Label>

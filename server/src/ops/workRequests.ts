@@ -7,6 +7,7 @@ import {
   buildMasterRows,
   CONTRACTOR_STATUSES,
   EXPORTS,
+  isCompleted,
   LIST_KEYS,
   RfeValidationError,
   summarise,
@@ -23,9 +24,11 @@ import { withTx, type Queryable } from '../db.js';
 import { AppError, badRequest, forbidden, notFound } from '../errors.js';
 import { notify } from '../notifications/index.js';
 import type { AuthUser } from '../types.js';
+import { purchasesFor, zeroRfeReport } from './zeroRfe.js';
 import {
   computedFor,
   deadlineFor,
+  effectiveStage,
   inTeams,
   loadComputeContext,
   scopeOf,
@@ -42,7 +45,7 @@ import {
   type WrRow,
 } from './context.js';
 
-const ALL_SEEING = ['coordinator', 'manager', 'contractor_admin'] as const;
+export const ALL_SEEING = ['coordinator', 'manager', 'contractor_admin'] as const;
 const STATUS_NAMES = CONTRACTOR_STATUSES.map((s) => s.name) as string[];
 const CRITERIA = [
   { value: 1, label: 'Criterion 1 - zero cost' },
@@ -55,7 +58,7 @@ const STAGE_LABELS: Record<number, string> = {
   3: '3. QF : Awaiting Estimation Approval',
   4: '4. SP : Awaiting Estimation Re-Submission',
   5: '5. SP : Estimation Approved & AMC & WIP',
-  6: '6. Work in progress',
+  6: '6. Issue & progress',
   7: '7. SP: WR Closeout Returned',
   8: '8. QF : Contractor Completed',
 };
@@ -89,7 +92,8 @@ export function wrView(w: WrRow, ctx: ComputeContext, user: AuthUser): WrView {
     wrCode: w.wr_code,
     wrStatus: w.wr_status,
     descriptiveStatus: w.descriptive_status,
-    qfStage: stageNo(w.descriptive_status),
+    qfStage: effectiveStage(w),
+    marafiqStage: stageNo(w.descriptive_status),
     srCode: w.sr_code,
     woCode: w.wo_code,
     ptwCode: w.ptw_code,
@@ -127,6 +131,9 @@ export function wrView(w: WrRow, ctx: ComputeContext, user: AuthUser): WrView {
       statusSource: w.status_source,
       dueAt: w.due_at,
       breachLevel: w.breach_level ?? 0,
+      zeroRfe: w.zero_rfe_at
+        ? { at: w.zero_rfe_at, byName: w.zero_rfe_by_name, amount: money ? w.zero_rfe_amount : null, note: w.zero_rfe_note }
+        : null,
     },
     computed,
     deadline: deadlineFor(w, ctx),
@@ -221,17 +228,17 @@ export async function filteredViews(app: FastifyInstance, scope: Scope, ctx: Com
   return views;
 }
 
-async function findWr(app: FastifyInstance, scope: Scope, code: string): Promise<WrRow> {
+export async function findWr(app: FastifyInstance, scope: Scope, code: string): Promise<WrRow> {
   const rows = await loadWrs(app.db, scope, { includeGone: true, code });
   if (!rows[0]) throw notFound('Work request not found.');
   return rows[0];
 }
 
-async function ensureInternal(db: Queryable, contractorId: string, wrId: string): Promise<void> {
+export async function ensureInternal(db: Queryable, contractorId: string, wrId: string): Promise<void> {
   await db.query('INSERT INTO wr_internal (contractor_id, work_request_id) VALUES ($1,$2) ON CONFLICT (work_request_id) DO NOTHING', [contractorId, wrId]);
 }
 
-async function sonuEvent(db: Queryable, contractorId: string, wrId: string, type: string, payload: unknown, userId: string) {
+export async function sonuEvent(db: Queryable, contractorId: string, wrId: string, type: string, payload: unknown, userId: string) {
   await db.query(`INSERT INTO wr_event (contractor_id, work_request_id, type, source, payload, user_id) VALUES ($1,$2,$3,'sonu',$4,$5)`, [
     contractorId, wrId, type, JSON.stringify(payload), userId,
   ]);
@@ -336,6 +343,7 @@ export default async function workRequestRoutes(app: FastifyInstance): Promise<v
           [cid, w.wr_code],
         )).rows[0] ?? null
       : undefined;
+    const localPurchases = await purchasesFor(db, cid, [w.id], money);
     return {
       ...view,
       today: ctx.today,
@@ -347,6 +355,7 @@ export default async function workRequestRoutes(app: FastifyInstance): Promise<v
       rfeComments: comments.rows,
       permit,
       moneyTrail,
+      localPurchases: localPurchases.get(w.id) ?? [],
     };
   });
 
@@ -536,11 +545,11 @@ export default async function workRequestRoutes(app: FastifyInstance): Promise<v
       const counts = new Map<number, { label: string; count: number }>();
       for (let s = 2; s <= 8; s++) counts.set(s, { label: STAGE_LABELS[s]!, count: 0 });
       for (const w of rows) {
-        const s = stageNo(w.descriptive_status);
+        const s = effectiveStage(w);
         if (s === null || !counts.has(s)) continue;
         const e = counts.get(s)!;
         e.count++;
-        if (w.descriptive_status) e.label = w.descriptive_status;
+        if (w.descriptive_status && s !== 6) e.label = w.descriptive_status;
       }
       descriptiveStages = [...counts.entries()].map(([stage, e]) => ({ stage, label: e.label, count: e.count }));
     }
@@ -566,10 +575,12 @@ export default async function workRequestRoutes(app: FastifyInstance): Promise<v
         WHERE b.contractor_id = $1 AND b.status = 'ok' ORDER BY b.created_at DESC LIMIT 1`,
       [scope.contractorId],
     );
+    const zr = await zeroRfeReport(app, scope, ctx, ctx.today.slice(0, 7));
     return {
       today: ctx.today,
       ...summary,
       descriptiveStages,
+      zeroRfe: { monthJobs: zr.totals.jobs, monthSpent: zr.totals.spent, withoutReceipt: zr.totals.withoutReceipt },
       needsActionToday: {
         deadlinesToday: dueToday.slice(0, 50).map(card),
         deadlinesTodayCount: dueToday.length,
@@ -607,13 +618,13 @@ export default async function workRequestRoutes(app: FastifyInstance): Promise<v
       const v = wrView(w, ctx, scope.user);
       return {
         wrCode: w.wr_code, buildingName: w.building_name, roomCode: w.room_code, description: (w.description ?? '').slice(0, 160),
-        wrStatus: w.wr_status, qfStage: stageNo(w.descriptive_status), criterion: w.criterion, contractorStatus: w.contractor_status,
+        wrStatus: w.wr_status, qfStage: effectiveStage(w), criterion: w.criterion, contractorStatus: w.contractor_status,
         dayCounter: v.deadline ? { day: v.deadline.dayNumber, limit: v.deadline.limit, state: v.deadline.state, dueDate: v.deadline.dueDate, rule: v.deadline.ruleName } : null,
         rfeTimeFrame: v.computed.rfeTimeFrame,
       };
     };
     for (const w of mine) {
-      const st = stageNo(w.descriptive_status);
+      const st = effectiveStage(w);
       const tf = computedFor(w, ctx).rfeTimeFrameKind;
       if (st === 4 || st === 7) groups.returned!.push(card(w));
       else if (comments.has(w.id)) groups.answer_qf!.push(card(w));

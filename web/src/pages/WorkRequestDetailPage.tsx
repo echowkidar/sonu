@@ -14,6 +14,7 @@ import { ShareWhatsApp } from '@/components/ShareWhatsApp';
 import { ErrorState } from '@/components/admin/kit';
 import { SonuPanel } from '@/components/ops/SonuPanel';
 import { AssignSheet } from '@/components/ops/AssignSheet';
+import { LocalPurchasesCard } from '@/components/ops/ZeroRfe';
 import { RfeEditor } from '@/components/ops/RfeEditor';
 import { apiGet } from '@/lib/api';
 import { OPS } from '@/lib/endpoints';
@@ -124,6 +125,8 @@ export function WrDetailView({ wr }: { wr: WrDetail }) {
               {wr.timeline.length === 0 ? <p className="text-sm text-muted-foreground">No events yet.</p> : <Timeline items={toTimelineItems(wr.timeline)} />}
             </CardContent>
           </Card>
+
+          {user && <LocalPurchasesCard wr={wr} role={role} userId={user.id} />}
 
           {wr.assignments.length > 0 && (
             <Card>

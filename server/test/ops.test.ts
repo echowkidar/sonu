@@ -322,6 +322,98 @@ describe('ops: imports, work requests, dashboard, jobs, exports, deadlines', () 
     expect(meta.contractorStatuses.length).toBe(15);
   });
 
+  it('0 RFE: convert, stage 6, local purchases with receipts, monthly report, undo rules', async () => {
+    const cands = (await users.coord!.c.get(`/api/work-requests?workTeam=${team1Code}&pageSize=500`)).json().items as { wrCode: string; wrStatus: string | null; internal: { ownerId: string | null } }[];
+    let code = '';
+    for (const c of cands) {
+      if (c.internal.ownerId || /complet|clos/i.test(c.wrStatus ?? '')) continue;
+      const d = (await users.coord!.c.get(`/api/work-requests/${c.wrCode}`)).json();
+      if (!d.rfe?.approvedOn) {
+        code = c.wrCode;
+        break;
+      }
+    }
+    expect(code).toBeTruthy();
+    // the dashboard stage tiles exist once a wr_dashboard import has succeeded
+    await ctx.db.query(`INSERT INTO import_batch (contractor_id, list_key, source, status) VALUES ($1, 'wr_dashboard', 'manual', 'ok')`, [aId]);
+    const stage6 = async () => {
+      const d = (await users.coord!.c.get('/api/dashboard')).json();
+      return { n: d.descriptiveStages.find((s: { stage: number }) => s.stage === 6) as { label: string; count: number }, zeroRfe: d.zeroRfe as { monthJobs: number; monthSpent: number; withoutReceipt: number } };
+    };
+    const before = await stage6();
+    expect(before.n.label).toBe('6. Issue & progress');
+
+    // not the owner -> 403; foreman / purchasing -> 403; amount 100 -> 400
+    const nonOwner = await users.sup1!.c.post(`/api/work-requests/${code}/zero-rfe`, { amount: 40 });
+    expect(nonOwner.statusCode).toBe(403);
+    expect(nonOwner.json().error.message).toBe('Take ownership first.');
+    expect((await users.foreman!.c.post(`/api/work-requests/${code}/zero-rfe`, { amount: 40 })).statusCode).toBe(403);
+    expect((await users.purchasing!.c.post(`/api/work-requests/${code}/zero-rfe`, { amount: 40 })).statusCode).toBe(403);
+    expect((await users.sup1!.c.patch(`/api/work-requests/${code}`, { takeOwnership: true, criterion: 3, contractorStatus: 'Awaiting Quote - TDGI' })).statusCode).toBe(200);
+    expect((await users.sup1!.c.post(`/api/work-requests/${code}/zero-rfe`, { amount: 100 })).statusCode).toBe(400);
+    expect((await users.sup1!.c.post(`/api/work-requests/${code}/zero-rfe`, { amount: 0 })).statusCode).toBe(400);
+    // no purchases before converting
+    const early = await upload(ctx, users.sup1!.c, `/api/work-requests/${code}/purchases`, [{ name: 'item', value: 'x' }, { name: 'amount', value: '5' }, { name: 'purchasedOn', value: TODAY }]);
+    expect(early.statusCode).toBe(400);
+
+    const conv = await users.sup1!.c.post(`/api/work-requests/${code}/zero-rfe`, { amount: 45.5, note: 'Two taps and a seal' });
+    expect(conv.statusCode).toBe(200);
+    expect(conv.json().internal).toMatchObject({ criterion: 2, contractorStatus: 'Work In Progress - TDGI', statusSource: 'manual', zeroRfe: { amount: 45.5, note: 'Two taps and a seal' } });
+    expect(conv.json().qfStage).toBe(6);
+    expect((await users.sup1!.c.post(`/api/work-requests/${code}/zero-rfe`, { amount: 10 })).statusCode).toBe(409);
+    const after = await stage6();
+    expect(after.n.count).toBe(before.n.count + 1);
+    expect(after.n.label).toBe('6. Issue & progress');
+    expect(after.zeroRfe).toEqual({ monthJobs: 1, monthSpent: 0, withoutReceipt: 1 });
+    expect((await users.coord!.c.get('/api/work-requests?qfStage=6')).json().items.map((i: { wrCode: string }) => i.wrCode)).toContain(code);
+    expect(await count(`SELECT count(*)::int n FROM wr_event WHERE type = 'wr.zero_rfe' AND work_request_id = $1`, [conv.json().id])).toBe(1);
+
+    // purchases
+    const future = await upload(ctx, users.sup1!.c, `/api/work-requests/${code}/purchases`, [
+      { name: 'item', value: 'Tap' }, { name: 'amount', value: '12' }, { name: 'purchasedOn', value: '2099-01-01' },
+    ]);
+    expect(future.statusCode).toBe(400);
+    const fakeImg = await upload(ctx, users.sup1!.c, `/api/work-requests/${code}/purchases`, [
+      { name: 'item', value: 'Tap' }, { name: 'amount', value: '12' }, { name: 'purchasedOn', value: TODAY },
+      { name: 'photo', fileName: 'r.jpg', data: Buffer.from('not an image'), type: 'image/jpeg' },
+    ]);
+    expect(fakeImg.statusCode).toBe(415);
+    const add = await upload(ctx, users.sup1!.c, `/api/work-requests/${code}/purchases`, [
+      { name: 'item', value: 'Mixer tap' }, { name: 'amount', value: '30.25' }, { name: 'purchasedOn', value: TODAY }, { name: 'pettyCashRef', value: 'PC-001' },
+      { name: 'photo', fileName: 'receipt.png', data: PNG, type: 'image/png' },
+    ]);
+    expect(add.statusCode).toBe(201);
+    const pid = add.json().id as string;
+    expect(add.json().attachments).toHaveLength(1);
+    const det = (await users.sup1!.c.get(`/api/work-requests/${code}`)).json();
+    expect(det.localPurchases).toHaveLength(1);
+    expect(det.localPurchases[0]).toMatchObject({ item: 'Mixer tap', amount: 30.25, purchasedOn: TODAY, pettyCashRef: 'PC-001' });
+    const rid = det.localPurchases[0].attachments[0].id as string;
+    const dl = await ctx.app.inject({ method: 'GET', url: `/api/attachments/${rid}`, headers: { cookie: users.sup1!.c.cookie } });
+    expect(dl.statusCode).toBe(200);
+    expect(dl.rawPayload.equals(PNG)).toBe(true);
+    expect((await users.sup2!.c.get(`/api/attachments/${rid}`)).statusCode).toBe(404);
+
+    const rep = (await users.coord!.c.get(`/api/zero-rfe?month=${TODAY.slice(0, 7)}`)).json();
+    expect(rep.totals).toEqual({ jobs: 1, expected: 45.5, spent: 30.25, withoutReceipt: 0 });
+    expect(rep.items[0]).toMatchObject({ wrCode: code, purchases: 1, receipts: 1, expected: 45.5, spent: 30.25, qfStageLabel: '6. Issue & progress' });
+    expect((await users.coord!.c.get('/api/zero-rfe?month=2020-01')).json().totals.jobs).toBe(0);
+    expect((await users.tech!.c.get('/api/zero-rfe')).statusCode).toBe(403);
+    expect((await bAdmin.get('/api/zero-rfe')).json().totals.jobs).toBe(0);
+
+    // undo is coordinator-level only and blocked while purchases exist
+    expect((await users.sup1!.c.del(`/api/work-requests/${code}/zero-rfe`)).statusCode).toBe(403);
+    expect((await users.coord!.c.del(`/api/work-requests/${code}/zero-rfe`)).statusCode).toBe(409);
+    // only the creator or a coordinator deletes a purchase
+    expect((await users.foreman!.c.del(`/api/work-requests/${code}/purchases/${pid}`)).statusCode).toBe(403);
+    expect((await users.sup1!.c.del(`/api/work-requests/${code}/purchases/${pid}`)).statusCode).toBe(200);
+    expect(await count(`SELECT count(*)::int n FROM attachment WHERE owner_type = 'local_purchase'`)).toBe(0);
+    const undo = await users.coord!.c.del(`/api/work-requests/${code}/zero-rfe`);
+    expect(undo.statusCode).toBe(200);
+    expect(undo.json().internal).toMatchObject({ criterion: 3, contractorStatus: 'Awaiting Quote - TDGI', zeroRfe: null });
+    expect((await stage6()).n.count).toBe(before.n.count);
+  });
+
   it('tenant isolation: contractor B sees nothing of A', async () => {
     expect((await bAdmin.get('/api/work-requests')).json().total).toBe(0);
     expect((await bAdmin.get('/api/work-requests/9100001')).statusCode).toBe(404);

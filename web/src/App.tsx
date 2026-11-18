@@ -26,6 +26,7 @@ const WorkRequestDetail = lazyPage(() => import('@/pages/WorkRequestDetailPage')
 const MyJobs = lazyPage(() => import('@/pages/MyJobsPage'));
 const MyJobDetail = lazyPage(() => import('@/pages/MyJobDetailPage'));
 const TeamJobs = lazyPage(() => import('@/pages/TeamJobsPage'));
+const ZeroRfeReportPage = lazyPage(() => import('@/pages/ZeroRfeReportPage'));
 const Imports = lazyPage(() => import('@/pages/ImportsPage'));
 const Notifications = lazyPage(() => import('@/pages/NotificationsPage'));
 const Profile = lazyPage(() => import('@/pages/ProfilePage'));
@@ -84,6 +85,7 @@ export default function App() {
                     <Route path="/my-jobs" element={<MyJobs />} />
                     <Route path="/my-jobs/:id" element={<MyJobDetail />} />
                     <Route path="/team-jobs" element={<TeamJobs />} />
+                    <Route path="/zero-rfe" element={<ZeroRfeReportPage />} />
                     <Route path="/imports" element={<Imports />} />
                     <Route path="/notifications" element={<Notifications />} />
                     <Route path="/profile" element={<Profile />} />

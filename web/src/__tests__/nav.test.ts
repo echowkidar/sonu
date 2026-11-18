@@ -65,3 +65,15 @@ describe('nav config', () => {
     for (const r of ROLES) expect(canAccess(r, '/profile')).toBe(true);
   });
 });
+
+describe('0 RFE report nav', () => {
+  it('is for field and office roles and stays under More on the phone', () => {
+    for (const r of ['supervisor', 'foreman', 'purchasing', 'coordinator', 'manager', 'contractor_admin'] as const) {
+      expect(canAccess(r, '/zero-rfe'), r).toBe(true);
+      expect(tabsForRole(r).tabs.map((t) => t.to), r).not.toContain('/zero-rfe');
+      expect(tabsForRole(r).more.map((t) => t.to), r).toContain('/zero-rfe');
+    }
+    expect(canAccess('technician', '/zero-rfe')).toBe(false);
+    expect(canAccess('platform_admin', '/zero-rfe')).toBe(false);
+  });
+});

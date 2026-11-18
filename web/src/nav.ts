@@ -4,7 +4,7 @@
  */
 import {
   LayoutDashboard, ClipboardList, Wrench, Users, FileUp, Bell, UserCircle, Building2, UserCog, Network,
-  FileSpreadsheet, Mail, MessageSquare, PlugZap, SlidersHorizontal, ListChecks, ScrollText, Briefcase,
+  FileSpreadsheet, Receipt, Mail, MessageSquare, PlugZap, SlidersHorizontal, ListChecks, ScrollText, Briefcase,
   type LucideIcon,
 } from 'lucide-react';
 import type { Role } from './lib/roles';
@@ -30,6 +30,8 @@ export const NAV: readonly NavItem[] = [
   // Foreman can own work requests (server OWNER_ROLES), so he needs the list and detail too.
   { id: 'work-requests', label: 'Work requests', to: '/work-requests', icon: ClipboardList, roles: ['contractor_admin', 'manager', 'coordinator', 'purchasing', 'supervisor', 'foreman'], tab: 3, group: 'main' },
   { id: 'imports', label: 'Imports', to: '/imports', icon: FileUp, roles: ['contractor_admin', 'coordinator', 'manager'], tab: 3, group: 'main' },
+  // Low priority (no tab): it sits under "More" on the phone so the tab bar keeps its four main places.
+  { id: 'zero-rfe', label: '0 RFE report', to: '/zero-rfe', icon: Receipt, roles: ['supervisor', 'foreman', 'purchasing', 'coordinator', 'manager', 'contractor_admin'], group: 'main' },
   { id: 'notifications', label: 'Notifications', to: '/notifications', icon: Bell, roles: WORK_ROLES, tab: 4, group: 'main' },
   { id: 'profile', label: 'Profile', to: '/profile', icon: UserCircle, roles: ['platform_admin', ...WORK_ROLES], group: 'main' },
 

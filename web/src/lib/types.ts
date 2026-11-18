@@ -87,14 +87,31 @@ export interface DashboardData {
     breachedTd?: DeadlineCard[]; breachedTdCount?: number;
   };
   dataAsOf: { at: string | null; by: string | null; listKey: string | null } | null;
+  /** 0 RFE this month (older servers do not send it). */
+  zeroRfe?: { monthJobs: number; monthSpent: number | null; withoutReceipt: number };
+}
+
+export interface ZeroRfeInfo { at: string; byName: string | null; amount: number | null; note: string | null }
+export interface LocalPurchase {
+  id: string; item: string; amount: number | null; purchasedOn: string; pettyCashRef: string | null; createdByName: string | null; createdById?: string | null; createdAt: string;
+  attachments: { id: string; fileName: string; mime: string }[];
+}
+export interface ZeroRfeItem {
+  wrCode: string; buildingName: string | null; description: string | null; zone: string | null; discipline: string | null; convertedAt: string; convertedByName: string | null;
+  expected: number | null; spent: number | null; purchases: number; receipts: number; wrStatus: string | null; qfStageLabel: string;
+}
+export interface ZeroRfeReport {
+  month: string;
+  totals: { jobs: number; expected: number | null; spent: number | null; withoutReceipt: number };
+  items: ZeroRfeItem[];
 }
 
 export interface WrView {
-  id: string; wrCode: string; wrStatus: string | null; descriptiveStatus: string | null; qfStage: number | null; ptwCode: string | null; ptwStatus: string | null;
+  id: string; wrCode: string; wrStatus: string | null; descriptiveStatus: string | null; qfStage: number | null; marafiqStage?: number | null; ptwCode: string | null; ptwStatus: string | null;
   requestor?: string | null; siteCode: string | null; siteName: string | null; buildingCode: string | null; buildingName: string | null; floorCode: string | null; roomCode: string | null;
   problemType: string | null; workTeamCode: string | null; priority: string | null; description: string | null; dateRequested: string | null; targetDate: string | null;
   dateTradeAssigned: string | null; estimatedTotalCost?: number | null; withRfe: boolean | null; progressPct: number | null; goneAt: string | null;
-  internal: { ownerId: string | null; ownerName: string | null; criterion: number | null; contractorStatus: string | null; fcRemarks: string | null; statusSource: string | null; dueAt: string | null; breachLevel: number | null };
+  internal: { ownerId: string | null; ownerName: string | null; criterion: number | null; contractorStatus: string | null; fcRemarks: string | null; statusSource: string | null; dueAt: string | null; breachLevel: number | null; zeroRfe?: ZeroRfeInfo | null };
   computed: {
     month: string; daysToBreach: number | null; tdStatus: string; kpi: string; rfeSubmittedOn: string | null; rfeApprovedOn: string | null; discipline: string; facility: string; zone: string;
     rfeStatus: string; daysSinceRequested: number | null; rfeTimeFrame: string; rfeTimeFrameKind: string;
@@ -113,6 +130,7 @@ export interface WrDetail extends WrView {
   rfeComments: { id: string; logId: string | null; text: string; createdBy: string | null; createdOn: string | null; sendTo: string | null; isDone: boolean | null; answeredInSonuAt: string | null }[];
   permit: { ptwCode: string; status: string | null; dateStart: string | null; dateUpto: string | null; dateIssued: string | null; applicant: string | null; controller: string | null; authority: string | null } | null;
   moneyTrail?: Record<string, string | number | null> | null;
+  localPurchases?: LocalPurchase[];
 }
 
 export interface Person { id: string; fullName: string; role: string; workTeams: string[] }
