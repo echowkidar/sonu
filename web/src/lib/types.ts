@@ -72,6 +72,8 @@ export interface Deadline {
 }
 export interface DeadlineCard {
   wrCode: string; buildingName: string | null; description: string | null; workTeamCode: string | null; ownerName: string | null; deadline: Deadline | null;
+  /** Days past the agreed target date (top-priority list only). */
+  overdueDays?: number;
 }
 export interface DashboardData {
   today: string;
@@ -82,6 +84,7 @@ export interface DashboardData {
   needsActionToday: {
     deadlinesToday: DeadlineCard[]; deadlinesTodayCount: number; breachedDeadlines: number;
     unowned: DeadlineCard[]; unownedCount: number; returns: DeadlineCard[]; returnsCount: number; unansweredComments: number;
+    breachedTd?: DeadlineCard[]; breachedTdCount?: number;
   };
   dataAsOf: { at: string | null; by: string | null; listKey: string | null } | null;
 }

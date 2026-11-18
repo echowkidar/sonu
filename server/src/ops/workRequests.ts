@@ -552,6 +552,9 @@ export default async function workRequestRoutes(app: FastifyInstance): Promise<v
     const dueToday = views.filter((v) => v.deadline && !v.deadline.breached && v.deadline.dueDate === ctx.today);
     const unowned = views.filter((v) => !(v.internal as { ownerId: string | null }).ownerId);
     const returns = views.filter((v) => [4, 7].includes((v.qfStage as number | null) ?? -1));
+    // Past the agreed target date, most overdue first: the top-priority list.
+    const overdue = (v: WrView) => (typeof v.computed.daysToBreach === 'number' ? v.computed.daysToBreach : 0);
+    const breachedTd = views.filter((v) => v.computed.tdStatus === 'Breached').sort((a, b) => overdue(b) - overdue(a));
     const unanswered = await app.db.query<{ n: number }>(
       `SELECT count(*)::int AS n FROM rfe_comment c JOIN work_request w ON w.id = c.work_request_id
         WHERE c.contractor_id = $1 AND w.gone_at IS NULL AND c.answered_in_sonu_at IS NULL AND COALESCE(c.is_done, false) = false
@@ -575,6 +578,8 @@ export default async function workRequestRoutes(app: FastifyInstance): Promise<v
         unowned: unowned.slice(0, 50).map(card),
         returnsCount: returns.length,
         returns: returns.slice(0, 50).map(card),
+        breachedTdCount: breachedTd.length,
+        breachedTd: breachedTd.slice(0, 50).map((v) => ({ ...card(v), overdueDays: overdue(v) })),
         unansweredComments: unanswered.rows[0]?.n ?? 0,
       },
       dataAsOf: asOf.rows[0] ? { at: asOf.rows[0].at, by: asOf.rows[0].by, listKey: asOf.rows[0].list_key } : null,

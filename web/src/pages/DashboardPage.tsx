@@ -52,20 +52,30 @@ function Split({ title, entries, filterKey, labels }: { title: string; entries: 
   );
 }
 
-function ActionList({ title, count, items, to }: { title: string; count: number; items: DeadlineCard[]; to?: string }) {
+function ActionList({ title, count, items, to, danger, limit = 8, className, subtitle }: {
+  title: string; count: number; items: DeadlineCard[]; to?: string; danger?: boolean; limit?: number; className?: string; subtitle?: string;
+}) {
+  const pill = danger ? 'bg-destructive text-destructive-foreground' : 'bg-muted';
   return (
-    <Card>
+    <Card className={[danger ? 'border-destructive/60' : '', className ?? ''].join(' ')}>
       <CardHeader className="flex-row items-center justify-between gap-2">
-        <CardTitle>{title}</CardTitle>
-        {to ? <Link to={to} className="rounded-full bg-muted px-2.5 py-0.5 text-sm font-semibold hover:underline" aria-label={`${title}: ${count}`}>{count}</Link> : <span className="rounded-full bg-muted px-2.5 py-0.5 text-sm font-semibold">{count}</span>}
+        <div className="grid gap-0.5">
+          <CardTitle className={danger ? 'text-destructive' : undefined}>{title}</CardTitle>
+          {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
+        </div>
+        {to ? <Link to={to} className={`rounded-full px-2.5 py-0.5 text-sm font-semibold hover:underline ${pill}`} aria-label={`${title}: ${count}`}>{count}</Link> : <span className={`rounded-full px-2.5 py-0.5 text-sm font-semibold ${pill}`}>{count}</span>}
       </CardHeader>
       <CardContent>
         {items.length === 0 ? <p className="text-sm text-muted-foreground">Nothing here.</p> : (
-          <ul className="grid gap-1">
-            {items.slice(0, 8).map((c) => (
+          <ul className={`grid gap-1 ${limit > 8 ? 'md:grid-cols-2' : ''}`}>
+            {items.slice(0, limit).map((c, i) => (
               <li key={c.wrCode}>
                 <Link to={`/work-requests/${c.wrCode}`} className="grid min-h-11 gap-0.5 rounded-lg px-2 py-1 hover:bg-muted/60">
-                  <span className="flex flex-wrap items-center gap-2"><span className="font-mono text-sm font-semibold">{c.wrCode}</span>
+                  <span className="flex flex-wrap items-center gap-2">
+                    {danger && <span className="text-xs font-semibold tabular-nums text-muted-foreground">#{i + 1}</span>}
+                    <span className="font-mono text-sm font-semibold">{c.wrCode}</span>
+                    {c.overdueDays !== undefined && <span className="rounded-full bg-destructive/15 px-2 py-0.5 text-xs font-semibold text-destructive">{c.overdueDays > 0 ? `${c.overdueDays} ${c.overdueDays === 1 ? 'day' : 'days'} past target date` : 'Target date today'}</span>}
+                    {c.ownerName ? <span className="text-xs text-muted-foreground">Owner: {c.ownerName}</span> : danger && <span className="text-xs font-semibold text-warning">No owner</span>}
                     {c.deadline && <DayCounter day={c.deadline.dayNumber} of={c.deadline.limit} />}</span>
                   <span className="truncate text-sm text-muted-foreground">{[c.buildingName, c.description].filter(Boolean).join(' — ')}</span>
                 </Link>
@@ -95,6 +105,20 @@ export function DashboardView({ data }: { data: DashboardData }) {
           {data.descriptiveStages.map((s) => (
             <KpiTile key={s.stage} label={s.label} value={s.count} onClick={() => nav(wrListUrl({ qfStage: s.stage }))} />
           ))}
+        </section>
+      )}
+
+      {n.breachedTd && (
+        <section aria-label="Top priority">
+          <ActionList
+            danger
+            limit={10}
+            title="Breached — top priority"
+            subtitle="Past the agreed target date, most overdue first"
+            count={n.breachedTdCount ?? n.breachedTd.length}
+            items={n.breachedTd}
+            to={wrListUrl({ tdStatus: 'Breached' })}
+          />
         </section>
       )}
 
