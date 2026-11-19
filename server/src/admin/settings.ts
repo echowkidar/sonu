@@ -50,7 +50,7 @@ export default async function settingsRoutes(app: FastifyInstance): Promise<void
     if (q.entityId) add('a.entity_id = ?', q.entityId);
     if (q.from) add('a.at >= ?', q.from);
     if (q.to) add('a.at < ?', q.to);
-    if (q.q) add(`(lower(coalesce(a.summary,'')) LIKE ? OR lower(coalesce(a.user_email,'')) LIKE ? OR a.action LIKE ?)`, `%${q.q.toLowerCase()}%`);
+    if (q.q) add(`(lower(coalesce(a.summary,'')) LIKE ? OR lower(coalesce(a.user_email,'')) LIKE ? OR a.action LIKE ? OR coalesce(a.ip,'') LIKE ?)`, `%${q.q.toLowerCase()}%`);
     const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
     const total = (await app.db.query<{ n: number }>(`SELECT count(*)::int AS n FROM audit_log a ${whereSql}`, params)).rows[0]!.n;
     params.push(q.pageSize, (q.page - 1) * q.pageSize);

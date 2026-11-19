@@ -89,7 +89,7 @@ export default function AdminAuditPage() {
             {people.data?.items.map((u) => <option key={u.id} value={u.id}>{u.fullName} ({u.email})</option>)}
           </NativeSelect>
         </div>
-        <div className="grid gap-1.5"><Label htmlFor="af-q">Search text</Label><Input id="af-q" placeholder="E-mail, summary…" value={f.q} onChange={(e) => set('q', e.target.value)} /></div>
+        <div className="grid gap-1.5"><Label htmlFor="af-q">Search text</Label><Input id="af-q" placeholder="E-mail, IP, summary…" value={f.q} onChange={(e) => set('q', e.target.value)} /></div>
         <div className="grid gap-1.5">
           <Label htmlFor="af-action">Action</Label>
           <NativeSelect id="af-action" value={f.action} onChange={(e) => set('action', e.target.value)}>{ACTION_GROUPS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</NativeSelect>
@@ -112,12 +112,13 @@ export default function AdminAuditPage() {
           <>
             <div className="overflow-auto rounded-xl border bg-card">
               <Table>
-                <TableHeader><TableRow><TableHead>When</TableHead><TableHead>Who</TableHead><TableHead>Action</TableHead><TableHead>Record</TableHead><TableHead>Summary</TableHead></TableRow></TableHeader>
+                <TableHeader><TableRow><TableHead>When</TableHead><TableHead>Who</TableHead><TableHead>IP address</TableHead><TableHead>Action</TableHead><TableHead>Record</TableHead><TableHead>Summary</TableHead></TableRow></TableHeader>
                 <TableBody>
                   {d.items.map((a) => (
                     <TableRow key={a.id} data-testid="audit-row" tabIndex={0} className="cursor-pointer" onClick={() => setOpen(a)} onKeyDown={(e) => { if (e.key === 'Enter') setOpen(a); }}>
                       <TableCell className="whitespace-nowrap">{formatDateTime(a.at)}</TableCell>
                       <TableCell className="whitespace-nowrap">{a.userEmail ?? 'System'}</TableCell>
+                      <TableCell className="whitespace-nowrap font-mono text-xs">{a.ip ?? ''}</TableCell>
                       <TableCell className="whitespace-nowrap"><code className="text-xs">{a.action}</code></TableCell>
                       <TableCell className="whitespace-nowrap">{a.entityType ?? ''}</TableCell>
                       <TableCell className="max-w-96 truncate">{a.summary ?? ''}</TableCell>
